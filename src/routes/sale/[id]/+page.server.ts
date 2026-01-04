@@ -1,25 +1,18 @@
-import type { PageServerLoad } from './$types';
-import { supabaseAdmin } from '$lib/supabase/server';
-import { error } from '@sveltejs/kit';
+import type { PageServerLoad } from "./$types";
+import { supabase } from "$lib/supabase/client";
+import { error } from "@sveltejs/kit";
 
-export const load: PageServerLoad = async ({ params, url }) => {
-	const { id } = params;
-	const verified = url.searchParams.get('verified');
+export const load: PageServerLoad = async ({ params }) => {
+  const { data: sale, error: dbError } = await supabase
+    .from("garage_sales")
+    .select("*")
+    .eq("id", params.id)
+    .eq("is_verified", true)
+    .single();
 
-	const { data: sale, error: fetchError } = await supabaseAdmin
-		.from('garage_sales')
-		.select('*')
-		.eq('id', id)
-		.eq('is_verified', true)
-		.single();
+  if (dbError || !sale) {
+    throw error(404, "Sale not found");
+  }
 
-	if (fetchError || !sale) {
-		throw error(404, 'Sale not found');
-	}
-
-	return {
-		sale,
-		justVerified: verified === 'success',
-		alreadyVerified: verified === 'already'
-	};
+  return { sale };
 };
