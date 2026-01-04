@@ -261,7 +261,6 @@
                                     id="zipCode"
                                     bind:value={zipCode}
                                     required
-                                    pattern="\d{5}"
                                     maxlength="5"
                                     inputmode="numeric"
                                     placeholder="66210"
