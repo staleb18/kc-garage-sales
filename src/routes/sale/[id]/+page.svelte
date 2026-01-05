@@ -4,6 +4,31 @@
     let { data }: { data: PageData } = $props();
     const sale = data.sale;
 
+    let showReportModal = $state(false);
+    let reportReason = $state("");
+    let reportSending = $state(false);
+    let reportSent = $state(false);
+
+    async function submitReport() {
+        reportSending = true;
+        try {
+            await fetch("/api/report", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    saleId: sale.id,
+                    saleTitle: sale.title,
+                    reason: reportReason,
+                }),
+            });
+            reportSent = true;
+        } catch (err) {
+            console.error("Failed to report:", err);
+        } finally {
+            reportSending = false;
+        }
+    }
+
     function formatDate(dateStr: string): string {
         const date = new Date(dateStr + "T00:00:00");
         return date.toLocaleDateString("en-US", {
@@ -191,7 +216,81 @@
                         </a>
                     </div>
                 {/if}
+
+                <!-- Report Button -->
+                <div class="border-t pt-6 mt-6">
+                    <button
+                        onclick={() => (showReportModal = true)}
+                        class="text-gray-400 hover:text-red-500 text-sm transition-colors"
+                    >
+                        <i class="fa-solid fa-flag mr-1"></i>
+                        Report this listing
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Report Modal -->
+{#if showReportModal}
+    <div
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+    >
+        <div class="bg-white rounded-xl max-w-md w-full p-6">
+            {#if reportSent}
+                <div class="text-center">
+                    <div
+                        class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                    >
+                        <i class="fa-solid fa-check text-green-600 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        Report Submitted
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        Thank you for helping keep our community safe.
+                    </p>
+                    <button
+                        onclick={() => (showReportModal = false)}
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg"
+                    >
+                        Close
+                    </button>
+                </div>
+            {:else}
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    Report this listing
+                </h3>
+                <p class="text-gray-600 text-sm mb-4">
+                    If this listing contains inappropriate content, please let
+                    us know.
+                </p>
+                <textarea
+                    bind:value={reportReason}
+                    placeholder="What's wrong with this listing? (optional)"
+                    rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                ></textarea>
+                <div class="flex gap-3">
+                    <button
+                        onclick={() => (showReportModal = false)}
+                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onclick={submitReport}
+                        disabled={reportSending}
+                        class="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white py-2 rounded-lg"
+                    >
+                        {#if reportSending}
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                        {/if}
+                        Submit Report
+                    </button>
+                </div>
+            {/if}
+        </div>
+    </div>
+{/if}
