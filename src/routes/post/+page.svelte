@@ -20,6 +20,35 @@
     let startTime = $state("08:00");
     let endTime = $state("14:00");
     let selectedCategories = $state<string[]>([]);
+    let photoFile = $state<File | null>(null);
+    let photoPreview = $state<string | null>(null);
+
+    function handlePhotoSelect(e: Event) {
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (file) {
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                error = "Photo must be less than 5MB";
+                return;
+            }
+            // Check file type
+            if (!file.type.startsWith("image/")) {
+                error = "Please select an image file";
+                return;
+            }
+            photoFile = file;
+            photoPreview = URL.createObjectURL(file);
+        }
+    }
+
+    function removePhoto() {
+        photoFile = null;
+        if (photoPreview) {
+            URL.revokeObjectURL(photoPreview);
+            photoPreview = null;
+        }
+    }
 
     // Get tomorrow's date as minimum
     const tomorrow = new Date();
@@ -42,23 +71,26 @@
         isSubmitting = true;
 
         try {
+            const formData = new FormData();
+            formData.append("email", email);
+            formData.append("title", title);
+            formData.append("description", description);
+            formData.append("address", address);
+            formData.append("city", city);
+            formData.append("state", state);
+            formData.append("zip_code", zipCode);
+            formData.append("start_date", startDate);
+            formData.append("end_date", endDate || startDate);
+            formData.append("start_time", startTime);
+            formData.append("end_time", endTime);
+            formData.append("categories", JSON.stringify(selectedCategories));
+            if (photoFile) {
+                formData.append("photo", photoFile);
+            }
+
             const response = await fetch("/api/sales", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    email,
-                    title,
-                    description,
-                    address,
-                    city,
-                    state,
-                    zip_code: zipCode,
-                    start_date: startDate,
-                    end_date: endDate || startDate,
-                    start_time: startTime,
-                    end_time: endTime,
-                    categories: selectedCategories,
-                }),
+                body: formData,
             });
 
             const data = await response.json();
@@ -191,6 +223,53 @@
                             placeholder="What items are you selling? Any special highlights?"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         ></textarea>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Photo <span class="text-gray-400">(optional)</span>
+                        </label>
+                        {#if photoPreview}
+                            <div class="relative inline-block">
+                                <img
+                                    src={photoPreview}
+                                    alt="Preview"
+                                    class="w-48 h-48 object-cover rounded-lg border border-gray-300"
+                                />
+                                <button
+                                    type="button"
+                                    onclick={removePhoto}
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600"
+                                >
+                                    <i class="fa-solid fa-times text-sm"></i>
+                                </button>
+                            </div>
+                        {:else}
+                            <label
+                                for="photo"
+                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                            >
+                                <i
+                                    class="fa-solid fa-camera text-gray-400 text-2xl mb-2"
+                                ></i>
+                                <span class="text-sm text-gray-500"
+                                    >Click to add a photo</span
+                                >
+                                <span class="text-xs text-gray-400 mt-1"
+                                    >Max 5MB</span
+                                >
+                                <input
+                                    type="file"
+                                    id="photo"
+                                    accept="image/*"
+                                    onchange={handlePhotoSelect}
+                                    class="hidden"
+                                />
+                            </label>
+                        {/if}
                     </div>
 
                     <!-- Address -->

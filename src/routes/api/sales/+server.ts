@@ -1,12 +1,40 @@
 import { json, error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { supabaseAdmin } from "$lib/supabase/server";
-import { PUBLIC_APP_URL } from "$env/static/public";
+import { PUBLIC_APP_URL, PUBLIC_SUPABASE_URL } from "$env/static/public";
 import { RESEND_API_KEY } from "$env/static/private";
 import { Resend } from "resend";
-import type { GarageSaleInput } from "$lib/types";
 
 const resend = new Resend(RESEND_API_KEY);
+
+// Upload photo to Supabase Storage
+async function uploadPhoto(file: File): Promise<string | null> {
+  try {
+    const fileExt = file.name.split(".").pop() || "jpg";
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    const { data, error: uploadError } = await supabaseAdmin.storage
+      .from("sale-photos")
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return null;
+    }
+
+    // Return public URL
+    return `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/sale-photos/${fileName}`;
+  } catch (err) {
+    console.error("Photo upload failed:", err);
+    return null;
+  }
+}
 
 // Geocode address using Nominatim (OpenStreetMap) - Free, no API key needed
 async function geocodeAddress(
@@ -78,36 +106,49 @@ async function sendVerificationEmail(
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const body: GarageSaleInput = await request.json();
+    const formData = await request.formData();
+
+    const email = formData.get("email") as string;
+    const title = formData.get("title") as string;
+    const description = formData.get("description") as string;
+    const address = formData.get("address") as string;
+    const city = formData.get("city") as string;
+    const state = formData.get("state") as string;
+    const zip_code = formData.get("zip_code") as string;
+    const start_date = formData.get("start_date") as string;
+    const end_date = formData.get("end_date") as string;
+    const start_time = formData.get("start_time") as string;
+    const end_time = formData.get("end_time") as string;
+    const categoriesJson = formData.get("categories") as string;
+    const photo = formData.get("photo") as File | null;
+
+    const categories = categoriesJson ? JSON.parse(categoriesJson) : [];
 
     // Validate required fields
-    if (
-      !body.email ||
-      !body.title ||
-      !body.address ||
-      !body.city ||
-      !body.state ||
-      !body.zip_code
-    ) {
+    if (!email || !title || !address || !city || !state || !zip_code) {
       throw error(400, "Missing required fields");
     }
 
-    if (!body.start_date || !body.start_time || !body.end_time) {
+    if (!start_date || !start_time || !end_time) {
       throw error(400, "Missing date or time");
     }
 
     // Validate state
-    if (!["KS", "MO"].includes(body.state)) {
+    if (!["KS", "MO"].includes(state)) {
       throw error(400, "Invalid state. Must be KS or MO.");
     }
 
+    // Upload photo if provided
+    let photos: string[] = [];
+    if (photo && photo.size > 0) {
+      const photoUrl = await uploadPhoto(photo);
+      if (photoUrl) {
+        photos = [photoUrl];
+      }
+    }
+
     // Geocode the address
-    const coords = await geocodeAddress(
-      body.address,
-      body.city,
-      body.state,
-      body.zip_code,
-    );
+    const coords = await geocodeAddress(address, city, state, zip_code);
 
     if (!coords) {
       throw error(
@@ -120,21 +161,21 @@ export const POST: RequestHandler = async ({ request }) => {
     const { data: sale, error: dbError } = await supabaseAdmin
       .from("garage_sales")
       .insert({
-        email: body.email,
-        title: body.title,
-        description: body.description || "",
-        address: body.address,
-        city: body.city,
-        state: body.state,
-        zip_code: body.zip_code,
+        email,
+        title,
+        description: description || "",
+        address,
+        city,
+        state,
+        zip_code,
         latitude: coords.lat,
         longitude: coords.lng,
-        start_date: body.start_date,
-        end_date: body.end_date || body.start_date,
-        start_time: body.start_time,
-        end_time: body.end_time,
-        categories: body.categories || [],
-        photos: body.photos || [],
+        start_date,
+        end_date: end_date || start_date,
+        start_time,
+        end_time,
+        categories,
+        photos,
         is_verified: false,
         is_featured: false,
       })
@@ -147,11 +188,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     // Send verification email
-    await sendVerificationEmail(
-      body.email,
-      sale.verification_token,
-      sale.title,
-    );
+    await sendVerificationEmail(email, sale.verification_token, sale.title);
 
     return json({
       success: true,
