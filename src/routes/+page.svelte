@@ -14,10 +14,27 @@
 
     let viewMode = $state<"map" | "list">("map");
     let selectedCategory = $state<string>("");
+    let selectedCity = $state<string>("");
     let searchQuery = $state<string>("");
+
+    // Get unique cities from sales with counts
+    let cities = $derived(() => {
+        const cityCount = new Map<string, number>();
+        for (const sale of data.sales) {
+            const city = sale.city;
+            cityCount.set(city, (cityCount.get(city) || 0) + 1);
+        }
+        return Array.from(cityCount.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([city, count]) => ({ city, count }));
+    });
 
     let filteredSales = $derived(() => {
         let result = data.sales;
+
+        if (selectedCity) {
+            result = result.filter((s) => s.city === selectedCity);
+        }
 
         if (selectedCategory) {
             result = result.filter((s) =>
@@ -97,30 +114,44 @@
     <section class="bg-white border-b sticky top-16 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3">
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <!-- Category Filter -->
-                <div
-                    class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0"
-                >
-                    <button
-                        onclick={() => (selectedCategory = "")}
-                        class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory ===
-                        ''
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                <!-- City & Category Filters -->
+                <div class="flex items-center gap-3 flex-wrap">
+                    <!-- City Dropdown -->
+                    <select
+                        bind:value={selectedCity}
+                        class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                        All
-                    </button>
-                    {#each CATEGORIES.slice(0, 6) as category}
+                        <option value="">All Cities</option>
+                        {#each cities() as { city, count }}
+                            <option value={city}>{city} ({count})</option>
+                        {/each}
+                    </select>
+
+                    <!-- Category Filter -->
+                    <div
+                        class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0"
+                    >
                         <button
-                            onclick={() => (selectedCategory = category)}
+                            onclick={() => (selectedCategory = "")}
                             class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory ===
-                            category
+                            ''
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
                         >
-                            {category}
+                            All
                         </button>
-                    {/each}
+                        {#each CATEGORIES.slice(0, 6) as category}
+                            <button
+                                onclick={() => (selectedCategory = category)}
+                                class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory ===
+                                category
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                            >
+                                {category}
+                            </button>
+                        {/each}
+                    </div>
                 </div>
 
                 <!-- View Toggle -->
