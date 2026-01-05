@@ -154,9 +154,10 @@
     <section class="max-w-7xl mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900">
-                {filteredSales().length} sale{filteredSales().length !== 1
+                {filteredSales().length} upcoming sale{filteredSales()
+                    .length !== 1
                     ? "s"
-                    : ""} this weekend
+                    : ""}
             </h2>
         </div>
 
