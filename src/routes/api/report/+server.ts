@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request }) => {
             <p><strong>Link:</strong> <a href="${saleUrl}">${saleUrl}</a></p>
           </div>
 
-          <p>To remove this listing, go to your Supabase dashboard and delete the sale from the garage_sales table.</p>
+          <p>To remove this listing, <a href="${PUBLIC_APP_URL}/admin">go to the Admin Dashboard</a>.</p>
         </div>
       `,
     });

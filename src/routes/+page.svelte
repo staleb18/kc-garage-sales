@@ -1,10 +1,18 @@
 <script lang="ts">
+    import { browser } from "$app/environment";
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import SaleCard from "$lib/components/SaleCard.svelte";
-    import Map from "$lib/components/Map.svelte";
     import type { GarageSale } from "$lib/types";
     import { CATEGORIES } from "$lib/types";
+
+    // Dynamically import Map only on client side
+    let MapComponent: any = $state(null);
+    if (browser) {
+        import("$lib/components/Map.svelte").then((m) => {
+            MapComponent = m.default;
+        });
+    }
 
     interface Props {
         data: { sales: GarageSale[] };
@@ -18,7 +26,7 @@
     let searchQuery = $state<string>("");
 
     // Get unique cities from sales with counts
-    let cities = $derived(() => {
+    let cities = $derived.by(() => {
         const cityCount = new Map<string, number>();
         for (const sale of data.sales) {
             const city = sale.city;
@@ -29,7 +37,7 @@
             .map(([city, count]) => ({ city, count }));
     });
 
-    let filteredSales = $derived(() => {
+    let filteredSales = $derived.by(() => {
         let result = data.sales;
 
         if (selectedCity) {
@@ -122,7 +130,7 @@
                         class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                         <option value="">All Cities</option>
-                        {#each cities() as { city, count }}
+                        {#each cities as { city, count }}
                             <option value={city}>{city} ({count})</option>
                         {/each}
                     </select>
@@ -185,8 +193,7 @@
     <section class="max-w-7xl mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900">
-                {filteredSales().length} upcoming sale{filteredSales()
-                    .length !== 1
+                {filteredSales.length} upcoming sale{filteredSales.length !== 1
                     ? "s"
                     : ""}
             </h2>
@@ -198,15 +205,25 @@
                 <div
                     class="h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-sm border"
                 >
-                    <Map
-                        sales={filteredSales()}
-                        onSaleClick={handleSaleClick}
-                    />
+                    {#if MapComponent}
+                        <MapComponent
+                            sales={filteredSales}
+                            onSaleClick={handleSaleClick}
+                        />
+                    {:else}
+                        <div
+                            class="w-full h-full bg-gray-100 flex items-center justify-center"
+                        >
+                            <i
+                                class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"
+                            ></i>
+                        </div>
+                    {/if}
                 </div>
 
                 <!-- Sale Cards -->
                 <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                    {#if filteredSales().length === 0}
+                    {#if filteredSales.length === 0}
                         <div class="text-center py-12 text-gray-500">
                             <i class="fa-solid fa-tag text-4xl mb-4"></i>
                             <p class="text-lg">No garage sales found</p>
@@ -219,7 +236,7 @@
                             </a>
                         </div>
                     {:else}
-                        {#each filteredSales() as sale (sale.id)}
+                        {#each filteredSales as sale (sale.id)}
                             <SaleCard {sale} />
                         {/each}
                     {/if}
@@ -230,7 +247,7 @@
             <div
                 class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
             >
-                {#if filteredSales().length === 0}
+                {#if filteredSales.length === 0}
                     <div class="col-span-full text-center py-12 text-gray-500">
                         <i class="fa-solid fa-tag text-4xl mb-4"></i>
                         <p class="text-lg">No garage sales found</p>
@@ -243,7 +260,7 @@
                         </a>
                     </div>
                 {:else}
-                    {#each filteredSales() as sale (sale.id)}
+                    {#each filteredSales as sale (sale.id)}
                         <SaleCard {sale} />
                     {/each}
                 {/if}
