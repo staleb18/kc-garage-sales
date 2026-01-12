@@ -2,10 +2,25 @@ import { json, error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { supabaseAdmin } from "$lib/supabase/server";
 import { PUBLIC_APP_URL, PUBLIC_SUPABASE_URL } from "$env/static/public";
-import { RESEND_API_KEY } from "$env/static/private";
+import { RESEND_API_KEY, HCAPTCHA_SECRET } from "$env/static/private";
 import { Resend } from "resend";
 
 const resend = new Resend(RESEND_API_KEY);
+
+// Verify hCaptcha token
+async function verifyCaptcha(token: string): Promise<boolean> {
+  try {
+    const response = await fetch("https://api.hcaptcha.com/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `response=${token}&secret=${HCAPTCHA_SECRET}`,
+    });
+    const data = await response.json();
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
 
 // Upload photo to Supabase Storage
 async function uploadPhoto(file: File): Promise<string | null> {
@@ -73,10 +88,12 @@ async function geocodeAddress(
 // Send verification email using Resend
 async function sendVerificationEmail(
   email: string,
-  token: string,
+  verificationToken: string,
+  editToken: string,
   title: string,
 ): Promise<void> {
-  const verifyUrl = `${PUBLIC_APP_URL}/verify/${token}`;
+  const verifyUrl = `${PUBLIC_APP_URL}/verify/${verificationToken}`;
+  const manageUrl = `${PUBLIC_APP_URL}/manage/${editToken}`;
 
   try {
     await resend.emails.send({
@@ -92,6 +109,13 @@ async function sendVerificationEmail(
             Verify My Sale
           </a>
           <p style="color: #666; font-size: 14px;">Or copy this link: ${verifyUrl}</p>
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+          <h2 style="color: #374151; font-size: 16px;">Manage Your Listing</h2>
+          <p style="color: #666; font-size: 14px;">Save this link to edit or delete your sale later:</p>
+          <a href="${manageUrl}" style="color: #2563eb; font-size: 14px;">${manageUrl}</a>
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
           <p style="color: #999; font-size: 12px;">KC Garage Sales - Find great deals in the Kansas City metro area</p>
         </div>
@@ -120,9 +144,19 @@ export const POST: RequestHandler = async ({ request }) => {
     const start_time = formData.get("start_time") as string;
     const end_time = formData.get("end_time") as string;
     const categoriesJson = formData.get("categories") as string;
-    const photo = formData.get("photo") as File | null;
+    const photoFiles = formData.getAll("photos") as File[];
+    const captchaToken = formData.get("h-captcha-response") as string;
 
     const categories = categoriesJson ? JSON.parse(categoriesJson) : [];
+
+    // Verify captcha
+    if (!captchaToken) {
+      throw error(400, "Captcha is required");
+    }
+    const captchaValid = await verifyCaptcha(captchaToken);
+    if (!captchaValid) {
+      throw error(400, "Captcha verification failed. Please try again.");
+    }
 
     // Validate required fields
     if (!email || !title || !address || !city || !state || !zip_code) {
@@ -138,12 +172,14 @@ export const POST: RequestHandler = async ({ request }) => {
       throw error(400, "Invalid state. Must be KS or MO.");
     }
 
-    // Upload photo if provided
+    // Upload photos if provided
     let photos: string[] = [];
-    if (photo && photo.size > 0) {
-      const photoUrl = await uploadPhoto(photo);
-      if (photoUrl) {
-        photos = [photoUrl];
+    for (const photo of photoFiles) {
+      if (photo && photo.size > 0) {
+        const photoUrl = await uploadPhoto(photo);
+        if (photoUrl) {
+          photos.push(photoUrl);
+        }
       }
     }
 
@@ -179,7 +215,7 @@ export const POST: RequestHandler = async ({ request }) => {
         is_verified: false,
         is_featured: false,
       })
-      .select("id, verification_token, title")
+      .select("id, verification_token, edit_token, title")
       .single();
 
     if (dbError) {
@@ -188,7 +224,12 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     // Send verification email
-    await sendVerificationEmail(email, sale.verification_token, sale.title);
+    await sendVerificationEmail(
+      email,
+      sale.verification_token,
+      sale.edit_token,
+      sale.title,
+    );
 
     return json({
       success: true,

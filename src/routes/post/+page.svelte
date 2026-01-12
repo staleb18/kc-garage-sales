@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { browser } from "$app/environment";
+    import { PUBLIC_HCAPTCHA_SITEKEY } from "$env/static/public";
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import { CATEGORIES } from "$lib/types";
@@ -6,6 +8,40 @@
     let isSubmitting = $state(false);
     let error = $state("");
     let success = $state(false);
+    let captchaToken = $state("");
+    let captchaWidgetId: string | null = null;
+
+    // Load hCaptcha script
+    if (browser) {
+        const script = document.createElement("script");
+        script.src = "https://js.hcaptcha.com/1/api.js?render=explicit";
+        script.async = true;
+        script.onload = () => {
+            // @ts-ignore
+            if (window.hcaptcha) {
+                // @ts-ignore
+                captchaWidgetId = window.hcaptcha.render("hcaptcha-container", {
+                    sitekey: PUBLIC_HCAPTCHA_SITEKEY,
+                    callback: (token: string) => {
+                        captchaToken = token;
+                    },
+                    "expired-callback": () => {
+                        captchaToken = "";
+                    },
+                });
+            }
+        };
+        document.head.appendChild(script);
+    }
+
+    function resetCaptcha() {
+        // @ts-ignore
+        if (browser && window.hcaptcha && captchaWidgetId !== null) {
+            // @ts-ignore
+            window.hcaptcha.reset(captchaWidgetId);
+            captchaToken = "";
+        }
+    }
 
     // Form fields
     let email = $state("");
@@ -20,34 +56,41 @@
     let startTime = $state("08:00");
     let endTime = $state("14:00");
     let selectedCategories = $state<string[]>([]);
-    let photoFile = $state<File | null>(null);
-    let photoPreview = $state<string | null>(null);
+    let photoFiles = $state<File[]>([]);
+    let photoPreviews = $state<string[]>([]);
+    const MAX_PHOTOS = 5;
 
     function handlePhotoSelect(e: Event) {
         const input = e.target as HTMLInputElement;
-        const file = input.files?.[0];
-        if (file) {
+        const files = input.files;
+        if (!files) return;
+
+        for (const file of Array.from(files)) {
+            if (photoFiles.length >= MAX_PHOTOS) {
+                error = `Maximum ${MAX_PHOTOS} photos allowed`;
+                break;
+            }
             // Check file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                error = "Photo must be less than 5MB";
-                return;
+                error = "Each photo must be less than 5MB";
+                continue;
             }
             // Check file type
             if (!file.type.startsWith("image/")) {
-                error = "Please select an image file";
-                return;
+                error = "Please select image files only";
+                continue;
             }
-            photoFile = file;
-            photoPreview = URL.createObjectURL(file);
+            photoFiles = [...photoFiles, file];
+            photoPreviews = [...photoPreviews, URL.createObjectURL(file)];
         }
+        // Reset input so same file can be selected again
+        input.value = "";
     }
 
-    function removePhoto() {
-        photoFile = null;
-        if (photoPreview) {
-            URL.revokeObjectURL(photoPreview);
-            photoPreview = null;
-        }
+    function removePhoto(index: number) {
+        URL.revokeObjectURL(photoPreviews[index]);
+        photoFiles = photoFiles.filter((_, i) => i !== index);
+        photoPreviews = photoPreviews.filter((_, i) => i !== index);
     }
 
     // Get tomorrow's date as minimum
@@ -68,6 +111,12 @@
     async function handleSubmit(e: SubmitEvent) {
         e.preventDefault();
         error = "";
+
+        if (!captchaToken) {
+            error = "Please complete the captcha";
+            return;
+        }
+
         isSubmitting = true;
 
         try {
@@ -84,8 +133,9 @@
             formData.append("start_time", startTime);
             formData.append("end_time", endTime);
             formData.append("categories", JSON.stringify(selectedCategories));
-            if (photoFile) {
-                formData.append("photo", photoFile);
+            formData.append("h-captcha-response", captchaToken);
+            for (const photo of photoFiles) {
+                formData.append("photos", photo);
             }
 
             const response = await fetch("/api/sales", {
@@ -102,6 +152,7 @@
             success = true;
         } catch (err) {
             error = err instanceof Error ? err.message : "Something went wrong";
+            resetCaptcha();
         } finally {
             isSubmitting = false;
         }
@@ -230,46 +281,55 @@
                         <label
                             class="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            Photo <span class="text-gray-400">(optional)</span>
-                        </label>
-                        {#if photoPreview}
-                            <div class="relative inline-block">
-                                <img
-                                    src={photoPreview}
-                                    alt="Preview"
-                                    class="w-48 h-48 object-cover rounded-lg border border-gray-300"
-                                />
-                                <button
-                                    type="button"
-                                    onclick={removePhoto}
-                                    class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600"
-                                >
-                                    <i class="fa-solid fa-times text-sm"></i>
-                                </button>
-                            </div>
-                        {:else}
-                            <label
-                                for="photo"
-                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                            Photos <span class="text-gray-400"
+                                >(up to {MAX_PHOTOS}, optional)</span
                             >
-                                <i
-                                    class="fa-solid fa-camera text-gray-400 text-2xl mb-2"
-                                ></i>
-                                <span class="text-sm text-gray-500"
-                                    >Click to add a photo</span
+                        </label>
+
+                        <div class="flex flex-wrap gap-3">
+                            {#each photoPreviews as preview, index}
+                                <div class="relative">
+                                    <img
+                                        src={preview}
+                                        alt="Preview {index + 1}"
+                                        class="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                                    />
+                                    <button
+                                        type="button"
+                                        onclick={() => removePhoto(index)}
+                                        class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600"
+                                    >
+                                        <i class="fa-solid fa-times text-sm"
+                                        ></i>
+                                    </button>
+                                </div>
+                            {/each}
+
+                            {#if photoFiles.length < MAX_PHOTOS}
+                                <label
+                                    for="photos"
+                                    class="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                                 >
-                                <span class="text-xs text-gray-400 mt-1"
-                                    >Max 5MB</span
-                                >
-                                <input
-                                    type="file"
-                                    id="photo"
-                                    accept="image/*"
-                                    onchange={handlePhotoSelect}
-                                    class="hidden"
-                                />
-                            </label>
-                        {/if}
+                                    <i
+                                        class="fa-solid fa-plus text-gray-400 text-xl"
+                                    ></i>
+                                    <span class="text-xs text-gray-400 mt-1"
+                                        >Add</span
+                                    >
+                                    <input
+                                        type="file"
+                                        id="photos"
+                                        accept="image/*"
+                                        multiple
+                                        onchange={handlePhotoSelect}
+                                        class="hidden"
+                                    />
+                                </label>
+                            {/if}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            Max 5MB per photo
+                        </p>
                     </div>
 
                     <!-- Address -->
@@ -449,6 +509,11 @@
                                 </button>
                             {/each}
                         </div>
+                    </div>
+
+                    <!-- hCaptcha -->
+                    <div>
+                        <div id="hcaptcha-container"></div>
                     </div>
 
                     <!-- Submit -->

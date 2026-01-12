@@ -1,13 +1,10 @@
 import { json, error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { RESEND_API_KEY } from "$env/static/private";
+import { RESEND_API_KEY, ADMIN_EMAIL } from "$env/static/private";
 import { PUBLIC_APP_URL } from "$env/static/public";
 import { Resend } from "resend";
 
 const resend = new Resend(RESEND_API_KEY);
-
-// Email to receive reports - change this to your email
-const ADMIN_EMAIL = "sofianetaleb18@gmail.com";
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
