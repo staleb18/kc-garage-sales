@@ -11,10 +11,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
     return { authenticated: false, sales: [] };
   }
 
-  // Fetch all sales (including unverified) for admin
+  // Fetch all sales (including unverified) for admin, with report counts
   const { data: sales, error } = await supabaseAdmin
     .from("garage_sales")
-    .select("*")
+    .select("*, sale_reports(count)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -22,9 +22,16 @@ export const load: PageServerLoad = async ({ cookies }) => {
     return { authenticated: true, sales: [] };
   }
 
+  // Flatten report count
+  const salesWithReports = (sales || []).map((s: any) => ({
+    ...s,
+    report_count: s.sale_reports?.[0]?.count ?? 0,
+    sale_reports: undefined,
+  }));
+
   return {
     authenticated: true,
-    sales: sales || [],
+    sales: salesWithReports,
   };
 };
 

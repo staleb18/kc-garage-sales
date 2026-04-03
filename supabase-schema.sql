@@ -100,3 +100,24 @@ create policy "Service manages subscribers"
 
 -- Storage bucket for sale photos (run in Supabase dashboard)
 -- insert into storage.buckets (id, name, public) values ('sale-photos', 'sale-photos', true);
+
+-- Sale Reports table
+create table sale_reports (
+  id uuid primary key default uuid_generate_v4(),
+  sale_id uuid not null references garage_sales(id) on delete cascade,
+  reason text,
+  ip_address text,
+  created_at timestamp with time zone default now()
+);
+
+-- Index for looking up reports by sale
+create index idx_sale_reports_sale_id on sale_reports (sale_id);
+
+-- Row Level Security for reports
+alter table sale_reports enable row level security;
+
+-- Only service key can read/write reports
+create policy "Service manages reports"
+  on sale_reports for all
+  using (true)
+  with check (true);

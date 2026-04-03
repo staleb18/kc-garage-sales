@@ -9,6 +9,34 @@
     let reportSending = $state(false);
     let reportSent = $state(false);
 
+    // Photo carousel
+    let currentPhotoIndex = $state(0);
+    const photos = sale.photos && sale.photos.length > 0 ? sale.photos : [];
+
+    function prevPhoto() {
+        currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;
+    }
+    function nextPhoto() {
+        currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+    }
+
+    // Social sharing
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href);
+        linkCopied = true;
+        setTimeout(() => (linkCopied = false), 2000);
+    }
+    let linkCopied = $state(false);
+
+    function getShareUrl(platform: string): string {
+        const url = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent(`Check out this garage sale: ${sale.title}`);
+        if (platform === "facebook") return `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+        if (platform === "twitter") return `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+        if (platform === "email") return `mailto:?subject=${encodeURIComponent(sale.title)}&body=${text}%20${url}`;
+        return "#";
+    }
+
     async function submitReport() {
         reportSending = true;
         try {
@@ -64,9 +92,9 @@
     />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950">
     <!-- Header -->
-    <div class="bg-white border-b">
+    <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-700">
         <div class="max-w-4xl mx-auto px-4 py-4">
             <a
                 href="/"
@@ -80,27 +108,51 @@
 
     <div class="max-w-4xl mx-auto px-4 py-8">
         <div
-            class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
         >
-            <!-- Photo -->
-            <div class="aspect-video bg-gray-100 relative">
-                {#if sale.photos && sale.photos.length > 0}
+            <!-- Photo Carousel -->
+            <div class="aspect-video bg-gray-100 relative overflow-hidden">
+                {#if photos.length > 0}
                     <img
-                        src={sale.photos[0]}
-                        alt={sale.title}
+                        src={photos[currentPhotoIndex]}
+                        alt="{sale.title} photo {currentPhotoIndex + 1}"
                         class="w-full h-full object-cover"
                     />
+                    {#if photos.length > 1}
+                        <button
+                            onclick={prevPhoto}
+                            class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                            aria-label="Previous photo"
+                        >
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button
+                            onclick={nextPhoto}
+                            class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                            aria-label="Next photo"
+                        >
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                            {#each photos as _, i}
+                                <button
+                                    onclick={() => (currentPhotoIndex = i)}
+                                    class="w-2 h-2 rounded-full transition-colors {i === currentPhotoIndex ? 'bg-white' : 'bg-white/50'}"
+                                    aria-label="Go to photo {i + 1}"
+                                ></button>
+                            {/each}
+                        </div>
+                        <div class="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                            {currentPhotoIndex + 1} / {photos.length}
+                        </div>
+                    {/if}
                 {:else}
-                    <div
-                        class="w-full h-full flex items-center justify-center text-gray-400"
-                    >
+                    <div class="w-full h-full flex items-center justify-center text-gray-400">
                         <i class="fa-solid fa-image text-6xl"></i>
                     </div>
                 {/if}
                 {#if sale.is_featured}
-                    <div
-                        class="absolute top-4 left-4 bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg"
-                    >
+                    <div class="absolute top-4 left-4 bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg">
                         <i class="fa-solid fa-star mr-1"></i>Featured
                     </div>
                 {/if}
@@ -108,7 +160,7 @@
 
             <!-- Content -->
             <div class="p-6 md:p-8">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
                     {sale.title}
                 </h1>
 
@@ -217,8 +269,45 @@
                     </div>
                 {/if}
 
-                <!-- Report Button -->
-                <div class="border-t pt-6 mt-6">
+                <!-- Share & Report -->
+                <div class="border-t pt-6 mt-6 flex items-center justify-between flex-wrap gap-4">
+                    <!-- Share buttons -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500 font-medium">Share:</span>
+                        <a
+                            href={getShareUrl("facebook")}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="w-8 h-8 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
+                            aria-label="Share on Facebook"
+                        >
+                            <i class="fa-brands fa-facebook-f text-sm"></i>
+                        </a>
+                        <a
+                            href={getShareUrl("twitter")}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-black text-white rounded-full transition-colors"
+                            aria-label="Share on X"
+                        >
+                            <i class="fa-brands fa-x-twitter text-sm"></i>
+                        </a>
+                        <a
+                            href={getShareUrl("email")}
+                            class="w-8 h-8 flex items-center justify-center bg-gray-500 hover:bg-gray-600 text-white rounded-full transition-colors"
+                            aria-label="Share via email"
+                        >
+                            <i class="fa-solid fa-envelope text-sm"></i>
+                        </a>
+                        <button
+                            onclick={copyLink}
+                            class="w-8 h-8 flex items-center justify-center {linkCopied ? 'bg-green-500' : 'bg-gray-200 hover:bg-gray-300'} text-gray-700 rounded-full transition-colors"
+                            aria-label="Copy link"
+                        >
+                            <i class="fa-solid {linkCopied ? 'fa-check text-white' : 'fa-link'} text-sm"></i>
+                        </button>
+                    </div>
+                    <!-- Report button -->
                     <button
                         onclick={() => (showReportModal = true)}
                         class="text-gray-400 hover:text-red-500 text-sm transition-colors"

@@ -2,10 +2,14 @@
     import { enhance } from "$app/forms";
     import type { GarageSale } from "$lib/types";
 
+    interface SaleWithReports extends GarageSale {
+        report_count?: number;
+    }
+
     interface Props {
         data: {
             authenticated: boolean;
-            sales: GarageSale[];
+            sales: SaleWithReports[];
         };
         form: { error?: string; success?: boolean; deleted?: boolean; updated?: boolean } | null;
     }
@@ -141,6 +145,12 @@
                     </div>
                     <div class="text-sm text-gray-500">Active</div>
                 </div>
+                <div class="bg-white rounded-lg p-4 shadow">
+                    <div class="text-2xl font-bold text-red-600">
+                        {data.sales.filter((s) => (s.report_count ?? 0) > 0).length}
+                    </div>
+                    <div class="text-sm text-gray-500">Reported</div>
+                </div>
             </div>
 
             <!-- Search -->
@@ -170,6 +180,9 @@
                                 </th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                     Dates
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    Reports
                                 </th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                     Status
@@ -203,6 +216,16 @@
                                         <div class="text-xs text-gray-500">
                                             {sale.start_time} - {sale.end_time}
                                         </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {#if sale.report_count && sale.report_count > 0}
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                                <i class="fa-solid fa-flag mr-1"></i>
+                                                {sale.report_count}
+                                            </span>
+                                        {:else}
+                                            <span class="text-xs text-gray-400">—</span>
+                                        {/if}
                                     </td>
                                     <td class="px-4 py-3">
                                         {#if sale.is_verified}

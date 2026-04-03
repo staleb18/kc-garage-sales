@@ -2,6 +2,23 @@ import type { PageServerLoad, Actions } from "./$types";
 import { supabaseAdmin } from "$lib/supabase/server";
 import { error, fail, redirect } from "@sveltejs/kit";
 import { CATEGORIES } from "$lib/types";
+import { PUBLIC_SUPABASE_URL } from "$env/static/public";
+
+async function uploadPhoto(file: File): Promise<string | null> {
+  try {
+    const fileExt = file.name.split(".").pop() || "jpg";
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("sale-photos")
+      .upload(fileName, buffer, { contentType: file.type, upsert: false });
+    if (uploadError) return null;
+    return `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/sale-photos/${fileName}`;
+  } catch {
+    return null;
+  }
+}
 
 export const load: PageServerLoad = async ({ params }) => {
   const { token } = params;
@@ -70,6 +87,76 @@ export const actions: Actions = {
       console.error("Update error:", updateError);
       return fail(500, { error: "Failed to update sale" });
     }
+
+    return { success: true };
+  },
+
+  addPhotos: async ({ request, params }) => {
+    const { token } = params;
+    const formData = await request.formData();
+
+    const { data: sale, error: fetchError } = await supabaseAdmin
+      .from("garage_sales")
+      .select("id, photos")
+      .eq("edit_token", token)
+      .single();
+
+    if (fetchError || !sale) return fail(404, { error: "Invalid edit link" });
+
+    const MAX_PHOTOS = 5;
+    const currentPhotos: string[] = sale.photos || [];
+    const slots = MAX_PHOTOS - currentPhotos.length;
+
+    if (slots <= 0) return fail(400, { error: "Maximum 5 photos already uploaded" });
+
+    const files = formData.getAll("photos") as File[];
+    const newUrls: string[] = [];
+
+    for (const file of files.slice(0, slots)) {
+      if (file && file.size > 0 && file.size <= 5 * 1024 * 1024 && file.type.startsWith("image/")) {
+        const url = await uploadPhoto(file);
+        if (url) newUrls.push(url);
+      }
+    }
+
+    if (newUrls.length === 0) return fail(400, { error: "No valid photos to upload" });
+
+    const { error: updateError } = await supabaseAdmin
+      .from("garage_sales")
+      .update({ photos: [...currentPhotos, ...newUrls] })
+      .eq("id", sale.id);
+
+    if (updateError) return fail(500, { error: "Failed to save photos" });
+
+    return { success: true };
+  },
+
+  removePhoto: async ({ request, params }) => {
+    const { token } = params;
+    const formData = await request.formData();
+    const photoUrl = formData.get("photoUrl") as string;
+
+    const { data: sale, error: fetchError } = await supabaseAdmin
+      .from("garage_sales")
+      .select("id, photos")
+      .eq("edit_token", token)
+      .single();
+
+    if (fetchError || !sale) return fail(404, { error: "Invalid edit link" });
+
+    // Remove from storage
+    const fileName = photoUrl.split("/").pop();
+    if (fileName) {
+      await supabaseAdmin.storage.from("sale-photos").remove([fileName]);
+    }
+
+    const updatedPhotos = (sale.photos || []).filter((p: string) => p !== photoUrl);
+    const { error: updateError } = await supabaseAdmin
+      .from("garage_sales")
+      .update({ photos: updatedPhotos })
+      .eq("id", sale.id);
+
+    if (updateError) return fail(500, { error: "Failed to remove photo" });
 
     return { success: true };
   },

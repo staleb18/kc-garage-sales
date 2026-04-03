@@ -60,6 +60,46 @@
     let photoPreviews = $state<string[]>([]);
     const MAX_PHOTOS = 5;
 
+    // Inline field validation
+    let fieldErrors = $state<Record<string, string>>({});
+    let touched = $state<Record<string, boolean>>({});
+
+    function validateEmail(val: string) {
+        if (!val) return "Email is required";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return "Enter a valid email address";
+        return "";
+    }
+    function validateTitle(val: string) {
+        if (!val.trim()) return "Title is required";
+        if (val.trim().length < 5) return "Title must be at least 5 characters";
+        return "";
+    }
+    function validateZip(val: string) {
+        if (!val) return "ZIP code is required";
+        if (!/^\d{5}$/.test(val)) return "Enter a valid 5-digit ZIP code";
+        return "";
+    }
+    function validateDates() {
+        if (startDate && endDate && endDate < startDate) return "End date must be on or after start date";
+        return "";
+    }
+    function validateTimes() {
+        if (startTime && endTime && endTime <= startTime) return "End time must be after start time";
+        return "";
+    }
+
+    function onBlur(field: string) {
+        touched[field] = true;
+        if (field === "email") fieldErrors.email = validateEmail(email);
+        if (field === "title") fieldErrors.title = validateTitle(title);
+        if (field === "address") fieldErrors.address = address.trim() ? "" : "Street address is required";
+        if (field === "city") fieldErrors.city = city.trim() ? "" : "City is required";
+        if (field === "zipCode") fieldErrors.zipCode = validateZip(zipCode);
+        if (field === "startDate") fieldErrors.startDate = startDate ? "" : "Start date is required";
+        if (field === "endDate") fieldErrors.endDate = validateDates();
+        if (field === "startTime" || field === "endTime") fieldErrors.times = validateTimes();
+    }
+
     function handlePhotoSelect(e: Event) {
         const input = e.target as HTMLInputElement;
         const files = input.files;
@@ -111,6 +151,27 @@
     async function handleSubmit(e: SubmitEvent) {
         e.preventDefault();
         error = "";
+
+        // Run all validations
+        const emailErr = validateEmail(email);
+        const titleErr = validateTitle(title);
+        const addressErr = address.trim() ? "" : "Street address is required";
+        const cityErr = city.trim() ? "" : "City is required";
+        const zipErr = validateZip(zipCode);
+        const startDateErr = startDate ? "" : "Start date is required";
+        const datesErr = validateDates();
+        const timesErr = validateTimes();
+
+        fieldErrors = {
+            email: emailErr, title: titleErr, address: addressErr,
+            city: cityErr, zipCode: zipErr, startDate: startDateErr,
+            endDate: datesErr, times: timesErr,
+        };
+
+        if (Object.values(fieldErrors).some(Boolean)) {
+            error = "Please fix the errors below";
+            return;
+        }
 
         if (!captchaToken) {
             error = "Please complete the captcha";
@@ -169,7 +230,7 @@
 
 <Header />
 
-<main class="min-h-screen bg-gray-50 py-8 px-4">
+<main class="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 px-4">
     <div class="max-w-2xl mx-auto">
         {#if success}
             <!-- Success Message -->
@@ -198,12 +259,12 @@
             </div>
         {:else}
             <!-- Form -->
-            <div class="bg-white rounded-xl shadow-sm p-6 md:p-8">
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-6 md:p-8">
                 <div class="mb-6">
-                    <h1 class="text-2xl font-bold text-gray-900">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                         Post Your Garage Sale
                     </h1>
-                    <p class="text-gray-600">
+                    <p class="text-gray-600 dark:text-gray-400">
                         It's free! Just fill out the details below.
                     </p>
                 </div>
@@ -230,13 +291,16 @@
                             type="email"
                             id="email"
                             bind:value={email}
+                            onblur={() => onBlur("email")}
                             required
                             placeholder="your@email.com"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.email ? 'border-red-400' : 'border-gray-300'}"
                         />
-                        <p class="text-xs text-gray-500 mt-1">
-                            We'll send you a link to verify and manage your sale
-                        </p>
+                        {#if fieldErrors.email}
+                            <p class="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+                        {:else}
+                            <p class="text-xs text-gray-500 mt-1">We'll send you a link to verify and manage your sale</p>
+                        {/if}
                     </div>
 
                     <!-- Title -->
@@ -251,11 +315,20 @@
                             type="text"
                             id="title"
                             bind:value={title}
+                            onblur={() => onBlur("title")}
                             required
                             maxlength="100"
                             placeholder="e.g., Multi-Family Garage Sale"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.title ? 'border-red-400' : 'border-gray-300'}"
                         />
+                        <div class="flex justify-between mt-1">
+                            {#if fieldErrors.title}
+                                <p class="text-xs text-red-500">{fieldErrors.title}</p>
+                            {:else}
+                                <span></span>
+                            {/if}
+                            <p class="text-xs text-gray-400">{title.length}/100</p>
+                        </div>
                     </div>
 
                     <!-- Description -->
@@ -274,6 +347,7 @@
                             placeholder="What items are you selling? Any special highlights?"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         ></textarea>
+                        <p class="text-xs text-gray-400 text-right mt-1">{description.length}/500</p>
                     </div>
 
                     <!-- Photo Upload -->
@@ -339,18 +413,18 @@
                                 for="address"
                                 class="block text-sm font-medium text-gray-700 mb-1"
                             >
-                                Street Address <span class="text-red-500"
-                                    >*</span
-                                >
+                                Street Address <span class="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 id="address"
                                 bind:value={address}
+                                onblur={() => onBlur("address")}
                                 required
                                 placeholder="123 Main St"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.address ? 'border-red-400' : 'border-gray-300'}"
                             />
+                            {#if fieldErrors.address}<p class="text-xs text-red-500 mt-1">{fieldErrors.address}</p>{/if}
                         </div>
 
                         <div>
@@ -364,10 +438,12 @@
                                 type="text"
                                 id="city"
                                 bind:value={city}
+                                onblur={() => onBlur("city")}
                                 required
                                 placeholder="Overland Park"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.city ? 'border-red-400' : 'border-gray-300'}"
                             />
+                            {#if fieldErrors.city}<p class="text-xs text-red-500 mt-1">{fieldErrors.city}</p>{/if}
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -399,12 +475,14 @@
                                     type="text"
                                     id="zipCode"
                                     bind:value={zipCode}
+                                    onblur={() => onBlur("zipCode")}
                                     required
                                     maxlength="5"
                                     inputmode="numeric"
                                     placeholder="66210"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.zipCode ? 'border-red-400' : 'border-gray-300'}"
                                 />
+                                {#if fieldErrors.zipCode}<p class="text-xs text-red-500 mt-1">{fieldErrors.zipCode}</p>{/if}
                             </div>
                         </div>
                     </div>
@@ -422,10 +500,12 @@
                                 type="date"
                                 id="startDate"
                                 bind:value={startDate}
+                                onblur={() => onBlur("startDate")}
                                 required
                                 min={minDate}
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.startDate ? 'border-red-400' : 'border-gray-300'}"
                             />
+                            {#if fieldErrors.startDate}<p class="text-xs text-red-500 mt-1">{fieldErrors.startDate}</p>{/if}
                         </div>
 
                         <div>
@@ -433,20 +513,21 @@
                                 for="endDate"
                                 class="block text-sm font-medium text-gray-700 mb-1"
                             >
-                                End Date <span class="text-gray-400"
-                                    >(optional)</span
-                                >
+                                End Date <span class="text-gray-400">(optional)</span>
                             </label>
                             <input
                                 type="date"
                                 id="endDate"
                                 bind:value={endDate}
+                                onblur={() => onBlur("endDate")}
                                 min={startDate || minDate}
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.endDate ? 'border-red-400' : 'border-gray-300'}"
                             />
-                            <p class="text-xs text-gray-500 mt-1">
-                                Leave blank for single-day sales
-                            </p>
+                            {#if fieldErrors.endDate}
+                                <p class="text-xs text-red-500 mt-1">{fieldErrors.endDate}</p>
+                            {:else}
+                                <p class="text-xs text-gray-500 mt-1">Leave blank for single-day sales</p>
+                            {/if}
                         </div>
                     </div>
 
@@ -463,8 +544,9 @@
                                 type="time"
                                 id="startTime"
                                 bind:value={startTime}
+                                onblur={() => onBlur("startTime")}
                                 required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.times ? 'border-red-400' : 'border-gray-300'}"
                             />
                         </div>
 
@@ -479,9 +561,11 @@
                                 type="time"
                                 id="endTime"
                                 bind:value={endTime}
+                                onblur={() => onBlur("endTime")}
                                 required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.times ? 'border-red-400' : 'border-gray-300'}"
                             />
+                            {#if fieldErrors.times}<p class="text-xs text-red-500 mt-1 col-span-2">{fieldErrors.times}</p>{/if}
                         </div>
                     </div>
 

@@ -30,11 +30,18 @@
         }
         return `${formatDate(sale.start_date)} - ${formatDate(sale.end_date)}`;
     }
+
+    function isNew(): boolean {
+        if (!sale.created_at) return false;
+        const created = new Date(sale.created_at);
+        const now = new Date();
+        return now.getTime() - created.getTime() < 24 * 60 * 60 * 1000;
+    }
 </script>
 
 <a
     href="/sale/{sale.id}"
-    class="block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100"
+    class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100 dark:border-gray-700"
 >
     <!-- Photo -->
     <div class="aspect-video bg-gray-100 relative">
@@ -58,15 +65,22 @@
                 <i class="fa-solid fa-star mr-1"></i>Featured
             </div>
         {/if}
+        {#if isNew()}
+            <div
+                class="absolute top-2 right-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded"
+            >
+                New
+            </div>
+        {/if}
     </div>
 
     <!-- Content -->
     <div class="p-4">
-        <h3 class="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
+        <h3 class="font-semibold text-gray-900 dark:text-white text-lg mb-1 line-clamp-1">
             {sale.title}
         </h3>
 
-        <div class="flex items-start gap-1 text-gray-600 text-sm mb-2">
+        <div class="flex items-start gap-1 text-gray-600 dark:text-gray-400 text-sm mb-2">
             <i class="fa-solid fa-location-dot text-blue-600 mt-0.5"></i>
             <span class="line-clamp-2"
                 >{sale.address}, {sale.city}, {sale.state} {sale.zip_code}</span
@@ -74,17 +88,17 @@
         </div>
 
         {#if sale.description}
-            <p class="text-gray-500 text-sm mb-2 line-clamp-2">
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-2 line-clamp-2">
                 {sale.description}
             </p>
         {/if}
 
-        <div class="flex items-center gap-1 text-gray-600 text-sm mb-3">
+        <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400 text-sm mb-3">
             <i class="fa-solid fa-calendar text-blue-600"></i>
             <span>{getDateDisplay()}</span>
         </div>
 
-        <div class="flex items-center gap-1 text-gray-600 text-sm mb-3">
+        <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400 text-sm mb-3">
             <i class="fa-solid fa-clock text-blue-600"></i>
             <span
                 >{formatTime(sale.start_time)} - {formatTime(
@@ -98,7 +112,7 @@
             <div class="flex flex-wrap gap-1">
                 {#each sale.categories.slice(0, 3) as category}
                     <span
-                        class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded"
+                        class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded"
                         >{category}</span
                     >
                 {/each}

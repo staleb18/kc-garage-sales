@@ -3,10 +3,11 @@ import type { RequestHandler } from "./$types";
 import { RESEND_API_KEY, ADMIN_EMAIL } from "$env/static/private";
 import { PUBLIC_APP_URL } from "$env/static/public";
 import { Resend } from "resend";
+import { supabaseAdmin } from "$lib/supabase/server";
 
 const resend = new Resend(RESEND_API_KEY);
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   try {
     const { saleId, saleTitle, reason } = await request.json();
 
@@ -14,9 +15,17 @@ export const POST: RequestHandler = async ({ request }) => {
       throw error(400, "Missing sale ID");
     }
 
+    // Store report in database
+    await supabaseAdmin.from("sale_reports").insert({
+      sale_id: saleId,
+      reason: reason || null,
+      ip_address: getClientAddress(),
+    });
+
     const saleUrl = `${PUBLIC_APP_URL}/sale/${saleId}`;
 
-    await resend.emails.send({
+    // Send email notification (non-blocking)
+    resend.emails.send({
       from: "KC Garage Sales <onboarding@resend.dev>",
       to: ADMIN_EMAIL,
       subject: `Report: ${saleTitle || "Garage Sale"}`,
@@ -34,7 +43,7 @@ export const POST: RequestHandler = async ({ request }) => {
           <p>To remove this listing, <a href="${PUBLIC_APP_URL}/admin">go to the Admin Dashboard</a>.</p>
         </div>
       `,
-    });
+    }).catch((err) => console.error("Failed to send report email:", err));
 
     return json({ success: true });
   } catch (err) {

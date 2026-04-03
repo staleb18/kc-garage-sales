@@ -172,6 +172,22 @@ export const POST: RequestHandler = async ({ request }) => {
       throw error(400, "Invalid state. Must be KS or MO.");
     }
 
+    // Validate zip code format
+    if (!/^\d{5}$/.test(zip_code)) {
+      throw error(400, "ZIP code must be 5 digits.");
+    }
+
+    // Validate date range
+    const effectiveEndDate = end_date || start_date;
+    if (effectiveEndDate < start_date) {
+      throw error(400, "End date must be on or after start date.");
+    }
+
+    // Validate time range
+    if (end_time <= start_time) {
+      throw error(400, "End time must be after start time.");
+    }
+
     // Upload photos if provided
     let photos: string[] = [];
     for (const photo of photoFiles) {

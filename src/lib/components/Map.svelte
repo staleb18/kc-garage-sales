@@ -13,8 +13,17 @@
 
     let mapContainer: HTMLDivElement;
     let map: any;
-    let markers: any[] = [];
+    let clusterGroup: any;
     let L: any;
+
+    async function loadScript(src: string): Promise<void> {
+        return new Promise((resolve) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.onload = () => resolve();
+            document.head.appendChild(script);
+        });
+    }
 
     onMount(async () => {
         if (!browser) return;
@@ -27,6 +36,19 @@
         link.rel = "stylesheet";
         link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
         document.head.appendChild(link);
+
+        // Import MarkerCluster CSS
+        const clusterCss1 = document.createElement("link");
+        clusterCss1.rel = "stylesheet";
+        clusterCss1.href = "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css";
+        document.head.appendChild(clusterCss1);
+        const clusterCss2 = document.createElement("link");
+        clusterCss2.rel = "stylesheet";
+        clusterCss2.href = "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css";
+        document.head.appendChild(clusterCss2);
+
+        // Load MarkerCluster plugin
+        await loadScript("https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js");
 
         // Wait for CSS to load
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -48,9 +70,8 @@
     function updateMarkers() {
         if (!map || !browser || !L) return;
 
-        // Clear existing markers
-        markers.forEach((m) => m.remove());
-        markers = [];
+        // Remove existing cluster group
+        if (clusterGroup) map.removeLayer(clusterGroup);
 
         // Create custom icon
         const saleIcon = L.divIcon({
@@ -75,13 +96,24 @@
             iconAnchor: [16, 16],
         });
 
-        // Add new markers
-        sales.forEach((sale) => {
-            const marker = L.marker([sale.latitude, sale.longitude], {
-                icon: saleIcon,
-            }).addTo(map);
+        // Create cluster group with custom cluster icon
+        clusterGroup = (L as any).markerClusterGroup({
+            maxClusterRadius: 50,
+            iconCreateFunction: (cluster: any) => {
+                const count = cluster.getChildCount();
+                return L.divIcon({
+                    html: `<div style="width:36px;height:36px;background:#2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${count}</div>`,
+                    className: "",
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18],
+                });
+            },
+        });
 
-            // Add popup with sale info
+        // Add markers to cluster group
+        sales.forEach((sale) => {
+            const marker = L.marker([sale.latitude, sale.longitude], { icon: saleIcon });
+
             marker.bindPopup(`
 				<div style="min-width: 150px;">
 					<strong>${sale.title}</strong><br>
@@ -93,13 +125,14 @@
                 if (onSaleClick) onSaleClick(sale);
             });
 
-            markers.push(marker);
+            clusterGroup.addLayer(marker);
         });
 
+        map.addLayer(clusterGroup);
+
         // Fit bounds if we have markers
-        if (markers.length > 0) {
-            const group = L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.1));
+        if (sales.length > 0) {
+            map.fitBounds(clusterGroup.getBounds().pad(0.1));
         }
     }
 

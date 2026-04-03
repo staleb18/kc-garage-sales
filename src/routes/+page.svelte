@@ -1,17 +1,24 @@
 <script lang="ts">
     import { browser } from "$app/environment";
+    import { goto } from "$app/navigation";
+    import { page } from "$app/stores";
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import SaleCard from "$lib/components/SaleCard.svelte";
+    import SaleCardSkeleton from "$lib/components/SaleCardSkeleton.svelte";
     import type { GarageSale } from "$lib/types";
     import { CATEGORIES } from "$lib/types";
 
     // Dynamically import Map only on client side
     let MapComponent: any = $state(null);
+    let mapLoading = $state(true);
     if (browser) {
         import("$lib/components/Map.svelte").then((m) => {
             MapComponent = m.default;
+            mapLoading = false;
         });
+    } else {
+        mapLoading = false;
     }
 
     interface Props {
@@ -20,10 +27,42 @@
 
     let { data }: Props = $props();
 
-    let viewMode = $state<"map" | "list">("map");
-    let selectedCategory = $state<string>("");
-    let selectedCity = $state<string>("");
-    let searchQuery = $state<string>("");
+    // Read initial state from URL params
+    const params = $page.url.searchParams;
+    let viewMode = $state<"map" | "list">((params.get("view") as "map" | "list") || "map");
+    let selectedCategory = $state<string>(params.get("category") || "");
+    let selectedCity = $state<string>(params.get("city") || "");
+    let searchQuery = $state<string>(params.get("q") || "");
+    let currentPage = $state<number>(parseInt(params.get("p") || "1"));
+    const PAGE_SIZE = 12;
+
+    // Sync filter state to URL (debounced for search)
+    let syncTimeout: ReturnType<typeof setTimeout>;
+    function syncToUrl() {
+        if (!browser) return;
+        clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(() => {
+            const url = new URL(window.location.href);
+            if (selectedCity) url.searchParams.set("city", selectedCity); else url.searchParams.delete("city");
+            if (selectedCategory) url.searchParams.set("category", selectedCategory); else url.searchParams.delete("category");
+            if (searchQuery) url.searchParams.set("q", searchQuery); else url.searchParams.delete("q");
+            if (viewMode !== "map") url.searchParams.set("view", viewMode); else url.searchParams.delete("view");
+            if (currentPage > 1) url.searchParams.set("p", String(currentPage)); else url.searchParams.delete("p");
+            goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
+        }, 150);
+    }
+
+    $effect(() => {
+        // Track all filter changes and sync
+        selectedCity; selectedCategory; searchQuery; viewMode; currentPage;
+        syncToUrl();
+    });
+
+    // Reset to page 1 when filters change
+    $effect(() => {
+        selectedCity; selectedCategory; searchQuery;
+        currentPage = 1;
+    });
 
     // Get unique cities from sales with counts
     let cities = $derived.by(() => {
@@ -61,6 +100,13 @@
         }
 
         return result;
+    });
+
+    // Pagination
+    let totalPages = $derived(Math.max(1, Math.ceil(filteredSales.length / PAGE_SIZE)));
+    let paginatedSales = $derived.by(() => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        return filteredSales.slice(start, start + PAGE_SIZE);
     });
 
     function handleSaleClick(sale: GarageSale) {
@@ -119,7 +165,7 @@
     </section>
 
     <!-- Filters & View Toggle -->
-    <section class="bg-white border-b sticky top-16 z-40">
+    <section class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <!-- City & Category Filters -->
@@ -127,7 +173,7 @@
                     <!-- City Dropdown -->
                     <select
                         bind:value={selectedCity}
-                        class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                         <option value="">All Cities</option>
                         {#each cities as { city, count }}
@@ -192,11 +238,12 @@
     <!-- Results -->
     <section class="max-w-7xl mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900">
-                {filteredSales.length} upcoming sale{filteredSales.length !== 1
-                    ? "s"
-                    : ""}
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {filteredSales.length} upcoming sale{filteredSales.length !== 1 ? "s" : ""}
             </h2>
+            {#if totalPages > 1}
+                <span class="text-sm text-gray-500">Page {currentPage} of {totalPages}</span>
+            {/if}
         </div>
 
         {#if viewMode === "map"}
@@ -211,13 +258,7 @@
                             onSaleClick={handleSaleClick}
                         />
                     {:else}
-                        <div
-                            class="w-full h-full bg-gray-100 flex items-center justify-center"
-                        >
-                            <i
-                                class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"
-                            ></i>
-                        </div>
+                        <div class="w-full h-full bg-gray-200 animate-pulse rounded-xl"></div>
                     {/if}
                 </div>
 
@@ -228,15 +269,12 @@
                             <i class="fa-solid fa-tag text-4xl mb-4"></i>
                             <p class="text-lg">No garage sales found</p>
                             <p class="text-sm">Be the first to post one!</p>
-                            <a
-                                href="/post"
-                                class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
-                            >
+                            <a href="/post" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
                                 Post a Sale
                             </a>
                         </div>
                     {:else}
-                        {#each filteredSales as sale (sale.id)}
+                        {#each paginatedSales as sale (sale.id)}
                             <SaleCard {sale} />
                         {/each}
                     {/if}
@@ -244,37 +282,68 @@
             </div>
         {:else}
             <!-- List View -->
-            <div
-                class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-            >
-                {#if filteredSales.length === 0}
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {#if mapLoading}
+                    {#each Array(8) as _}
+                        <SaleCardSkeleton />
+                    {/each}
+                {:else if filteredSales.length === 0}
                     <div class="col-span-full text-center py-12 text-gray-500">
                         <i class="fa-solid fa-tag text-4xl mb-4"></i>
                         <p class="text-lg">No garage sales found</p>
                         <p class="text-sm">Be the first to post one!</p>
-                        <a
-                            href="/post"
-                            class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
-                        >
+                        <a href="/post" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
                             Post a Sale
                         </a>
                     </div>
                 {:else}
-                    {#each filteredSales as sale (sale.id)}
+                    {#each paginatedSales as sale (sale.id)}
                         <SaleCard {sale} />
                     {/each}
                 {/if}
             </div>
+
+            <!-- Pagination -->
+            {#if totalPages > 1}
+                <div class="flex items-center justify-center gap-2 mt-8">
+                    <button
+                        onclick={() => (currentPage = Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                    >
+                        <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+                    </button>
+                    {#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
+                        {#if p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1}
+                            <button
+                                onclick={() => (currentPage = p)}
+                                class="w-9 h-9 rounded-lg text-sm font-medium transition-colors {p === currentPage ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'}"
+                            >
+                                {p}
+                            </button>
+                        {:else if Math.abs(p - currentPage) === 2}
+                            <span class="text-gray-400">…</span>
+                        {/if}
+                    {/each}
+                    <button
+                        onclick={() => (currentPage = Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                    >
+                        Next <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            {/if}
         {/if}
     </section>
 
     <!-- CTA Section -->
-    <section class="bg-gray-100 py-12 px-4">
+    <section class="bg-gray-100 dark:bg-gray-800 py-12 px-4">
         <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Have a Garage Sale Coming Up?
             </h2>
-            <p class="text-gray-600 mb-6">
+            <p class="text-gray-600 dark:text-gray-300 mb-6">
                 Post your sale for free and reach thousands of bargain hunters
                 in the KC metro area.
             </p>

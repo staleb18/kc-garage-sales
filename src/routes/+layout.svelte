@@ -1,7 +1,17 @@
 <script lang="ts">
     import "../app.css";
+    import { browser } from "$app/environment";
 
     let { children } = $props();
+
+    // Apply saved theme on load
+    if (browser) {
+        const saved = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (saved === "dark" || (!saved && prefersDark)) {
+            document.documentElement.classList.add("dark");
+        }
+    }
 </script>
 
 <svelte:head>
@@ -22,6 +32,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
     {@render children()}
 </div>
