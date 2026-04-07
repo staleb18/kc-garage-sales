@@ -125,27 +125,15 @@
 <Header />
 
 <main class="min-h-screen">
-    <!-- Hero Section -->
-    <section
-        class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-12 px-4"
-    >
+    <!-- Hero Section (compact) -->
+    <section class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-8 px-4">
         <div class="max-w-7xl mx-auto text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">
-                Find Garage Sales in <span class="text-amber-400"
-                    >Kansas City</span
-                >
+            <h1 class="text-3xl md:text-4xl font-bold mb-6">
+                Find Garage Sales in <span class="text-amber-400">Kansas City</span>
             </h1>
-            <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-                Discover amazing deals at garage sales, yard sales, and estate
-                sales across the KC metro area.
-            </p>
-
-            <!-- Search Bar -->
             <div class="max-w-2xl mx-auto flex gap-2">
                 <div class="flex-1 relative">
-                    <i
-                        class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    ></i>
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     <input
                         type="text"
                         bind:value={searchQuery}
@@ -157,20 +145,18 @@
                     href="/post"
                     class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap"
                 >
-                    <i class="fa-solid fa-plus mr-2"></i>
-                    Post Sale
+                    <i class="fa-solid fa-plus mr-2"></i>Post Sale
                 </a>
             </div>
         </div>
     </section>
 
     <!-- Filters & View Toggle -->
-    <section class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-40">
+    <section class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-[1000]">
         <div class="max-w-7xl mx-auto px-4 py-3">
-            <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <!-- City & Category Filters -->
                 <div class="flex items-center gap-3 flex-wrap">
-                    <!-- City Dropdown -->
                     <select
                         bind:value={selectedCity}
                         class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -181,55 +167,35 @@
                         {/each}
                     </select>
 
-                    <!-- Category Filter -->
-                    <div
-                        class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0"
-                    >
+                    <div class="category-scroll flex items-center gap-2 overflow-x-auto">
                         <button
                             onclick={() => (selectedCategory = "")}
-                            class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory ===
-                            ''
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-                        >
-                            All
-                        </button>
-                        {#each CATEGORIES.slice(0, 6) as category}
+                            class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                        >All</button>
+                        {#each CATEGORIES as category}
                             <button
                                 onclick={() => (selectedCategory = category)}
-                                class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory ===
-                                category
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-                            >
-                                {category}
-                            </button>
+                                class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                            >{category}</button>
                         {/each}
                     </div>
                 </div>
 
-                <!-- View Toggle -->
-                <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                    <button
-                        onclick={() => (viewMode = "map")}
-                        class="px-3 py-1.5 rounded text-sm font-medium transition-colors {viewMode ===
-                        'map'
-                            ? 'bg-white shadow text-blue-600'
-                            : 'text-gray-600 hover:text-gray-900'}"
-                    >
-                        <i class="fa-solid fa-map mr-1"></i>
-                        Map
-                    </button>
-                    <button
-                        onclick={() => (viewMode = "list")}
-                        class="px-3 py-1.5 rounded text-sm font-medium transition-colors {viewMode ===
-                        'list'
-                            ? 'bg-white shadow text-blue-600'
-                            : 'text-gray-600 hover:text-gray-900'}"
-                    >
-                        <i class="fa-solid fa-list mr-1"></i>
-                        List
-                    </button>
+                <!-- Right: count + view toggle -->
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
+                        {filteredSales.length} sale{filteredSales.length !== 1 ? "s" : ""}
+                    </span>
+                    <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                        <button
+                            onclick={() => (viewMode = "map")}
+                            class="px-3 py-1.5 rounded text-sm font-medium transition-colors {viewMode === 'map' ? 'bg-white dark:bg-gray-700 shadow text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
+                        ><i class="fa-solid fa-map mr-1"></i>Map</button>
+                        <button
+                            onclick={() => (viewMode = "list")}
+                            class="px-3 py-1.5 rounded text-sm font-medium transition-colors {viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
+                        ><i class="fa-solid fa-list mr-1"></i>List</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -237,38 +203,24 @@
 
     <!-- Results -->
     <section class="max-w-7xl mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {filteredSales.length} upcoming sale{filteredSales.length !== 1 ? "s" : ""}
-            </h2>
-            {#if totalPages > 1}
-                <span class="text-sm text-gray-500">Page {currentPage} of {totalPages}</span>
-            {/if}
-        </div>
-
         {#if viewMode === "map"}
             <div class="grid lg:grid-cols-2 gap-6">
                 <!-- Map -->
-                <div
-                    class="h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-sm border"
-                >
+                <div class="h-[500px] lg:h-[calc(100vh-16rem)] rounded-xl overflow-hidden shadow-sm border lg:sticky lg:top-32">
                     {#if MapComponent}
-                        <MapComponent
-                            sales={filteredSales}
-                            onSaleClick={handleSaleClick}
-                        />
+                        <MapComponent sales={filteredSales} onSaleClick={handleSaleClick} />
                     {:else}
-                        <div class="w-full h-full bg-gray-200 animate-pulse rounded-xl"></div>
+                        <div class="w-full h-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-xl"></div>
                     {/if}
                 </div>
 
                 <!-- Sale Cards -->
-                <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                <div class="space-y-4">
                     {#if filteredSales.length === 0}
                         <div class="text-center py-12 text-gray-500">
                             <i class="fa-solid fa-tag text-4xl mb-4"></i>
-                            <p class="text-lg">No garage sales found</p>
-                            <p class="text-sm">Be the first to post one!</p>
+                            <p class="text-lg font-medium">No garage sales found</p>
+                            <p class="text-sm mt-1">Try adjusting your filters or be the first to post!</p>
                             <a href="/post" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
                                 Post a Sale
                             </a>
@@ -277,6 +229,22 @@
                         {#each paginatedSales as sale (sale.id)}
                             <SaleCard {sale} />
                         {/each}
+
+                        {#if totalPages > 1}
+                            <div class="flex items-center justify-center gap-2 pt-4">
+                                <button
+                                    onclick={() => (currentPage = Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                                ><i class="fa-solid fa-chevron-left mr-1"></i> Prev</button>
+                                <span class="text-sm text-gray-600 dark:text-gray-400">{currentPage} / {totalPages}</span>
+                                <button
+                                    onclick={() => (currentPage = Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage === totalPages}
+                                    class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                                >Next <i class="fa-solid fa-chevron-right ml-1"></i></button>
+                            </div>
+                        {/if}
                     {/if}
                 </div>
             </div>
@@ -290,8 +258,8 @@
                 {:else if filteredSales.length === 0}
                     <div class="col-span-full text-center py-12 text-gray-500">
                         <i class="fa-solid fa-tag text-4xl mb-4"></i>
-                        <p class="text-lg">No garage sales found</p>
-                        <p class="text-sm">Be the first to post one!</p>
+                        <p class="text-lg font-medium">No garage sales found</p>
+                        <p class="text-sm mt-1">Be the first to post one!</p>
                         <a href="/post" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
                             Post a Sale
                         </a>
@@ -303,24 +271,19 @@
                 {/if}
             </div>
 
-            <!-- Pagination -->
             {#if totalPages > 1}
                 <div class="flex items-center justify-center gap-2 mt-8">
                     <button
                         onclick={() => (currentPage = Math.max(1, currentPage - 1))}
                         disabled={currentPage === 1}
                         class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                    >
-                        <i class="fa-solid fa-chevron-left mr-1"></i> Prev
-                    </button>
+                    ><i class="fa-solid fa-chevron-left mr-1"></i> Prev</button>
                     {#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
                         {#if p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1}
                             <button
                                 onclick={() => (currentPage = p)}
                                 class="w-9 h-9 rounded-lg text-sm font-medium transition-colors {p === currentPage ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'}"
-                            >
-                                {p}
-                            </button>
+                            >{p}</button>
                         {:else if Math.abs(p - currentPage) === 2}
                             <span class="text-gray-400">…</span>
                         {/if}
@@ -329,33 +292,38 @@
                         onclick={() => (currentPage = Math.min(totalPages, currentPage + 1))}
                         disabled={currentPage === totalPages}
                         class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                    >
-                        Next <i class="fa-solid fa-chevron-right ml-1"></i>
-                    </button>
+                    >Next <i class="fa-solid fa-chevron-right ml-1"></i></button>
                 </div>
             {/if}
         {/if}
     </section>
 
     <!-- CTA Section -->
-    <section class="bg-gray-100 dark:bg-gray-800 py-12 px-4">
+    <section class="bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 py-10 px-4 mt-4">
         <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 Have a Garage Sale Coming Up?
             </h2>
             <p class="text-gray-600 dark:text-gray-300 mb-6">
-                Post your sale for free and reach thousands of bargain hunters
-                in the KC metro area.
+                Post your sale for free and reach thousands of bargain hunters in the KC metro area.
             </p>
             <a
                 href="/post"
                 class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
             >
-                <i class="fa-solid fa-plus mr-2"></i>
-                Post Your Sale - It's Free!
+                <i class="fa-solid fa-plus mr-2"></i>Post Your Sale — It's Free!
             </a>
         </div>
     </section>
 </main>
 
 <Footer />
+
+<style>
+    .category-scroll {
+        scrollbar-width: none;
+    }
+    .category-scroll::-webkit-scrollbar {
+        display: none;
+    }
+</style>
