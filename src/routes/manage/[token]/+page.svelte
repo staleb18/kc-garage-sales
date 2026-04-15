@@ -1,12 +1,13 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { untrack } from "svelte";
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import type { PageData, ActionData } from "./$types";
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
-    let selectedCategories = $state<string[]>(data.sale.categories || []);
+    let selectedCategories: string[] = $state(untrack(() => data.sale.categories) || []);
     let showDeleteConfirm = $state(false);
     let isSubmitting = $state(false);
     let isDeleting = $state(false);
@@ -16,7 +17,7 @@
 
     function toggleCategory(category: string) {
         if (selectedCategories.includes(category)) {
-            selectedCategories = selectedCategories.filter((c) => c !== category);
+            selectedCategories = selectedCategories.filter((c: string) => c !== category);
         } else if (selectedCategories.length < 5) {
             selectedCategories = [...selectedCategories, category];
         }
@@ -151,9 +152,9 @@
 
                 <!-- Categories -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <p class="block text-sm font-medium text-gray-700 mb-2">
                         Categories (select up to 5)
-                    </label>
+                    </p>
                     <div class="flex flex-wrap gap-2">
                         {#each data.categories as category}
                             <button
@@ -168,72 +169,6 @@
                         {/each}
                     </div>
                     <input type="hidden" name="categories" value={JSON.stringify(selectedCategories)} />
-                </div>
-
-                <!-- Photo Management -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Photos ({data.sale.photos?.length || 0}/{MAX_PHOTOS})
-                    </label>
-                    <div class="flex flex-wrap gap-3 mb-3">
-                        {#each (data.sale.photos || []) as photo}
-                            <div class="relative">
-                                <img src={photo} alt="Sale photo" class="w-24 h-24 object-cover rounded-lg border border-gray-300" />
-                                <form
-                                    method="POST"
-                                    action="?/removePhoto"
-                                    use:enhance={() => {
-                                        removingPhotoUrl = photo;
-                                        return async ({ update }) => { await update(); removingPhotoUrl = null; };
-                                    }}
-                                >
-                                    <input type="hidden" name="photoUrl" value={photo} />
-                                    <button
-                                        type="submit"
-                                        disabled={removingPhotoUrl === photo}
-                                        class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white w-6 h-6 rounded-full flex items-center justify-center"
-                                        title="Remove photo"
-                                    >
-                                        {#if removingPhotoUrl === photo}
-                                            <i class="fa-solid fa-spinner fa-spin text-xs"></i>
-                                        {:else}
-                                            <i class="fa-solid fa-times text-xs"></i>
-                                        {/if}
-                                    </button>
-                                </form>
-                            </div>
-                        {/each}
-
-                        {#if (data.sale.photos?.length || 0) < MAX_PHOTOS}
-                            <form
-                                method="POST"
-                                action="?/addPhotos"
-                                enctype="multipart/form-data"
-                                use:enhance={() => {
-                                    isUploadingPhotos = true;
-                                    return async ({ update }) => { await update(); isUploadingPhotos = false; };
-                                }}
-                            >
-                                <label class="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                    {#if isUploadingPhotos}
-                                        <i class="fa-solid fa-spinner fa-spin text-gray-400 text-xl"></i>
-                                    {:else}
-                                        <i class="fa-solid fa-plus text-gray-400 text-xl"></i>
-                                        <span class="text-xs text-gray-400 mt-1">Add</span>
-                                    {/if}
-                                    <input
-                                        type="file"
-                                        name="photos"
-                                        accept="image/*"
-                                        multiple
-                                        class="hidden"
-                                        onchange={(e) => (e.target as HTMLElement).closest('form')?.requestSubmit()}
-                                    />
-                                </label>
-                            </form>
-                        {/if}
-                    </div>
-                    <p class="text-xs text-gray-500">Max 5 photos, 5MB each</p>
                 </div>
 
                 <!-- Address (read-only) -->
@@ -259,6 +194,72 @@
                     {/if}
                 </button>
             </form>
+
+            <!-- Photo Management -->
+            <div class="mt-8 pt-8 border-t border-gray-200">
+                <p class="text-sm font-medium text-gray-700 mb-2">
+                    Photos ({data.sale.photos?.length || 0}/{MAX_PHOTOS})
+                </p>
+                <div class="flex flex-wrap gap-3 mb-3">
+                    {#each (data.sale.photos || []) as photo, photoIdx}
+                        <div class="relative">
+                            <img src={photo} alt="Listing image {photoIdx + 1}" class="w-24 h-24 object-cover rounded-lg border border-gray-300" />
+                            <form
+                                method="POST"
+                                action="?/removePhoto"
+                                use:enhance={() => {
+                                    removingPhotoUrl = photo;
+                                    return async ({ update }) => { await update(); removingPhotoUrl = null; };
+                                }}
+                            >
+                                <input type="hidden" name="photoUrl" value={photo} />
+                                <button
+                                    type="submit"
+                                    disabled={removingPhotoUrl === photo}
+                                    aria-label="Remove photo {photoIdx + 1}"
+                                    class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white w-6 h-6 rounded-full flex items-center justify-center"
+                                >
+                                    {#if removingPhotoUrl === photo}
+                                        <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                                    {:else}
+                                        <i class="fa-solid fa-times text-xs"></i>
+                                    {/if}
+                                </button>
+                            </form>
+                        </div>
+                    {/each}
+
+                    {#if (data.sale.photos?.length || 0) < MAX_PHOTOS}
+                        <form
+                            method="POST"
+                            action="?/addPhotos"
+                            enctype="multipart/form-data"
+                            use:enhance={() => {
+                                isUploadingPhotos = true;
+                                return async ({ update }) => { await update(); isUploadingPhotos = false; };
+                            }}
+                        >
+                            <label class="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                {#if isUploadingPhotos}
+                                    <i class="fa-solid fa-spinner fa-spin text-gray-400 text-xl"></i>
+                                {:else}
+                                    <i class="fa-solid fa-plus text-gray-400 text-xl"></i>
+                                    <span class="text-xs text-gray-400 mt-1">Add</span>
+                                {/if}
+                                <input
+                                    type="file"
+                                    name="photos"
+                                    accept="image/*"
+                                    multiple
+                                    class="hidden"
+                                    onchange={(e) => (e.target as HTMLElement).closest('form')?.requestSubmit()}
+                                />
+                            </label>
+                        </form>
+                    {/if}
+                </div>
+                <p class="text-xs text-gray-500">Max 5 photos, 5MB each</p>
+            </div>
 
             <!-- Delete Section -->
             <div class="mt-8 pt-8 border-t border-gray-200">

@@ -2,7 +2,7 @@
     import type { PageData } from "./$types";
 
     let { data }: { data: PageData } = $props();
-    const sale = data.sale;
+    const sale = $derived(data.sale);
 
     let showReportModal = $state(false);
     let reportReason = $state("");
@@ -11,7 +11,7 @@
 
     // Photo carousel
     let currentPhotoIndex = $state(0);
-    const photos = sale.photos && sale.photos.length > 0 ? sale.photos : [];
+    const photos = $derived(sale.photos && sale.photos.length > 0 ? sale.photos : []);
 
     function prevPhoto() {
         currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;

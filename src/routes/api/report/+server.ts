@@ -1,6 +1,6 @@
 import { json, error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { RESEND_API_KEY, ADMIN_EMAIL } from "$env/static/private";
+import { RESEND_API_KEY, ADMIN_EMAIL, RESEND_FROM_EMAIL } from "$env/static/private";
 import { PUBLIC_APP_URL } from "$env/static/public";
 import { Resend } from "resend";
 import { supabaseAdmin } from "$lib/supabase/server";
@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
     // Send email notification (non-blocking)
     resend.emails.send({
-      from: "KC Garage Sales <onboarding@resend.dev>",
+      from: RESEND_FROM_EMAIL,
       to: ADMIN_EMAIL,
       subject: `Report: ${saleTitle || "Garage Sale"}`,
       html: `

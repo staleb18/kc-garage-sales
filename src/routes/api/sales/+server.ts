@@ -2,7 +2,7 @@ import { json, error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { supabaseAdmin } from "$lib/supabase/server";
 import { PUBLIC_APP_URL, PUBLIC_SUPABASE_URL } from "$env/static/public";
-import { RESEND_API_KEY, HCAPTCHA_SECRET } from "$env/static/private";
+import { RESEND_API_KEY, HCAPTCHA_SECRET, RESEND_FROM_EMAIL } from "$env/static/private";
 import { Resend } from "resend";
 
 const resend = new Resend(RESEND_API_KEY);
@@ -97,7 +97,7 @@ async function sendVerificationEmail(
 
   try {
     await resend.emails.send({
-      from: "KC Garage Sales <onboarding@resend.dev>",
+      from: RESEND_FROM_EMAIL,
       to: email,
       subject: "Verify your garage sale listing",
       html: `
@@ -121,7 +121,6 @@ async function sendVerificationEmail(
         </div>
       `,
     });
-    console.log(`Verification email sent to ${email}`);
   } catch (err) {
     console.error("Failed to send verification email:", err);
     // Don't throw - sale is already created, user can request new email later

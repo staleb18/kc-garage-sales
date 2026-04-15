@@ -49,20 +49,20 @@
     let description = $state("");
     let address = $state("");
     let city = $state("");
-    let state = $state<"KS" | "MO">("KS");
+    let selectedState: "KS" | "MO" = $state("KS");
     let zipCode = $state("");
     let startDate = $state("");
     let endDate = $state("");
     let startTime = $state("08:00");
     let endTime = $state("14:00");
-    let selectedCategories = $state<string[]>([]);
-    let photoFiles = $state<File[]>([]);
-    let photoPreviews = $state<string[]>([]);
+    let selectedCategories: string[] = $state([]);
+    let photoFiles: File[] = $state([]);
+    let photoPreviews: string[] = $state([]);
     const MAX_PHOTOS = 5;
 
     // Inline field validation
-    let fieldErrors = $state<Record<string, string>>({});
-    let touched = $state<Record<string, boolean>>({});
+    let fieldErrors: Record<string, string> = $state({});
+    let touched: Record<string, boolean> = $state({});
 
     function validateEmail(val: string) {
         if (!val) return "Email is required";
@@ -129,8 +129,8 @@
 
     function removePhoto(index: number) {
         URL.revokeObjectURL(photoPreviews[index]);
-        photoFiles = photoFiles.filter((_, i) => i !== index);
-        photoPreviews = photoPreviews.filter((_, i) => i !== index);
+        photoFiles = photoFiles.filter((_: File, i: number) => i !== index);
+        photoPreviews = photoPreviews.filter((_: string, i: number) => i !== index);
     }
 
     // Get tomorrow's date as minimum
@@ -141,7 +141,7 @@
     function toggleCategory(category: string) {
         if (selectedCategories.includes(category)) {
             selectedCategories = selectedCategories.filter(
-                (c) => c !== category,
+                (c: string) => c !== category,
             );
         } else if (selectedCategories.length < 5) {
             selectedCategories = [...selectedCategories, category];
@@ -187,7 +187,7 @@
             formData.append("description", description);
             formData.append("address", address);
             formData.append("city", city);
-            formData.append("state", state);
+            formData.append("state", selectedState);
             formData.append("zip_code", zipCode);
             formData.append("start_date", startDate);
             formData.append("end_date", endDate || startDate);
@@ -352,13 +352,13 @@
 
                     <!-- Photo Upload -->
                     <div>
-                        <label
+                        <p
                             class="block text-sm font-medium text-gray-700 mb-1"
                         >
                             Photos <span class="text-gray-400"
                                 >(up to {MAX_PHOTOS}, optional)</span
                             >
-                        </label>
+                        </p>
 
                         <div class="flex flex-wrap gap-3">
                             {#each photoPreviews as preview, index}
@@ -371,6 +371,7 @@
                                     <button
                                         type="button"
                                         onclick={() => removePhoto(index)}
+                                        aria-label="Remove photo {index + 1}"
                                         class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600"
                                     >
                                         <i class="fa-solid fa-times text-sm"
@@ -456,7 +457,7 @@
                                 </label>
                                 <select
                                     id="state"
-                                    bind:value={state}
+                                    bind:value={selectedState}
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 >
                                     <option value="KS">Kansas</option>
@@ -571,13 +572,13 @@
 
                     <!-- Categories -->
                     <div>
-                        <label
+                        <p
                             class="block text-sm font-medium text-gray-700 mb-2"
                         >
                             Categories <span class="text-gray-400"
                                 >(select up to 5)</span
                             >
-                        </label>
+                        </p>
                         <div class="flex flex-wrap gap-2">
                             {#each CATEGORIES as category}
                                 <button
