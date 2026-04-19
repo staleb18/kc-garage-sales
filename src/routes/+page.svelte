@@ -131,7 +131,7 @@
             <h1 class="text-3xl md:text-4xl font-bold mb-6">
                 Find Garage Sales in <span class="text-amber-400">Kansas City</span>
             </h1>
-            <div class="max-w-2xl mx-auto flex gap-2">
+            <div class="max-w-2xl mx-auto flex flex-wrap gap-2">
                 <div class="flex-1 relative">
                     <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     <input
@@ -156,7 +156,7 @@
         <div class="max-w-7xl mx-auto px-4 py-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <!-- City & Category Filters -->
-                <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex items-center gap-3 flex-wrap min-w-0 flex-1">
                     <select
                         bind:value={selectedCity}
                         class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -167,7 +167,7 @@
                         {/each}
                     </select>
 
-                    <div class="category-scroll flex items-center gap-2 overflow-x-auto">
+                    <div class="category-scroll flex items-center gap-2 overflow-x-auto min-w-0 flex-1">
                         <button
                             onclick={() => (selectedCategory = "")}
                             class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
