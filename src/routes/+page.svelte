@@ -116,10 +116,10 @@
 
 <svelte:head>
     <title>KC Garage Sales - Find Garage Sales in Kansas City Metro</title>
-    <meta
-        name="description"
-        content="Find garage sales, yard sales, and estate sales in the Kansas City metro area. Post your sale for free!"
-    />
+    <meta name="description" content="Find garage sales, yard sales, and estate sales in the Kansas City metro area. Post your sale for free!" />
+    <meta property="og:title" content="KC Garage Sales - Find Garage Sales in Kansas City Metro" />
+    <meta property="og:description" content="Find garage sales, yard sales, and estate sales in the Kansas City metro area. Post your sale for free!" />
+    <meta property="og:url" content="https://kcgaragesales.com" />
 </svelte:head>
 
 <Header />

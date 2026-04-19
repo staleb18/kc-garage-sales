@@ -146,7 +146,12 @@ export const POST: RequestHandler = async ({ request }) => {
     const photoFiles = formData.getAll("photos") as File[];
     const captchaToken = formData.get("h-captcha-response") as string;
 
-    const categories = categoriesJson ? JSON.parse(categoriesJson) : [];
+    let categories: string[] = [];
+    try {
+      categories = categoriesJson ? JSON.parse(categoriesJson) : [];
+    } catch {
+      throw error(400, "Invalid categories format");
+    }
 
     // Verify captcha
     if (!captchaToken) {

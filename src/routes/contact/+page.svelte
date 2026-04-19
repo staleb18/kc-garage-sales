@@ -63,7 +63,7 @@
                         <div>
                             <h3 class="font-medium text-gray-900">How do I edit or remove my listing?</h3>
                             <p class="text-gray-600 text-sm mt-1">
-                                Contact us with your listing details and we'll help you make changes or remove it.
+                                Use the management link sent to your email when you posted your sale. It lets you edit details, add photos, or delete your listing at any time.
                             </p>
                         </div>
                         <div>
