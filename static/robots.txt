@@ -3,3 +3,5 @@ Disallow: /admin
 Disallow: /manage/
 Disallow: /verify/
 Allow: /
+
+Sitemap: https://kcgaragesales.com/sitemap.xml

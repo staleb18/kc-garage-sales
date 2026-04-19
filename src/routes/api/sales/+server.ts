@@ -4,8 +4,16 @@ import { supabaseAdmin } from "$lib/supabase/server";
 import { PUBLIC_APP_URL, PUBLIC_SUPABASE_URL } from "$env/static/public";
 import { RESEND_API_KEY, HCAPTCHA_SECRET, RESEND_FROM_EMAIL } from "$env/static/private";
 import { Resend } from "resend";
+import { checkRateLimit } from "$lib/rateLimit";
+
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
 
 const resend = new Resend(RESEND_API_KEY);
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 
 // Verify hCaptcha token
 async function verifyCaptcha(token: string): Promise<boolean> {
@@ -25,7 +33,13 @@ async function verifyCaptcha(token: string): Promise<boolean> {
 // Upload photo to Supabase Storage
 async function uploadPhoto(file: File): Promise<string | null> {
   try {
-    const fileExt = file.name.split(".").pop() || "jpg";
+    const fileExt = (file.name.split(".").pop() || "").toLowerCase();
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type) || !ALLOWED_EXTENSIONS.includes(fileExt)) {
+      console.warn("Rejected file upload:", file.type, fileExt);
+      return null;
+    }
+
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
@@ -103,7 +117,7 @@ async function sendVerificationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #2563eb;">Verify Your Garage Sale</h1>
-          <p>Thanks for posting your garage sale: <strong>${title}</strong></p>
+          <p>Thanks for posting your garage sale: <strong>${escapeHtml(title)}</strong></p>
           <p>Click the button below to verify your listing and make it visible to shoppers:</p>
           <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 16px 0;">
             Verify My Sale
@@ -127,7 +141,13 @@ async function sendVerificationEmail(
   }
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+  // Rate limit: 3 sale submissions per IP per hour
+  const ip = getClientAddress();
+  if (!checkRateLimit(`sales:${ip}`, 3, 60 * 60 * 1000)) {
+    throw error(429, "Too many submissions. Please try again later.");
+  }
+
   try {
     const formData = await request.formData();
 

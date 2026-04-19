@@ -4,9 +4,13 @@ import { error, fail, redirect } from "@sveltejs/kit";
 import { CATEGORIES } from "$lib/types";
 import { PUBLIC_SUPABASE_URL } from "$env/static/public";
 
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
+
 async function uploadPhoto(file: File): Promise<string | null> {
   try {
-    const fileExt = file.name.split(".").pop() || "jpg";
+    const fileExt = (file.name.split(".").pop() || "").toLowerCase();
+    if (!ALLOWED_MIME_TYPES.includes(file.type) || !ALLOWED_EXTENSIONS.includes(fileExt)) return null;
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const arrayBuffer = await file.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
@@ -63,7 +67,12 @@ export const actions: Actions = {
     const end_time = formData.get("end_time") as string;
     const categoriesJson = formData.get("categories") as string;
 
-    const categories = categoriesJson ? JSON.parse(categoriesJson) : [];
+    let categories: string[] = [];
+    try {
+      categories = categoriesJson ? JSON.parse(categoriesJson) : [];
+    } catch {
+      return fail(400, { error: "Invalid categories format" });
+    }
 
     if (!title || !start_date || !start_time || !end_time) {
       return fail(400, { error: "Missing required fields" });

@@ -1,6 +1,7 @@
 <script lang="ts">
     import "../app.css";
     import { browser } from "$app/environment";
+    import GoogleAnalytics from "$lib/components/GoogleAnalytics.svelte";
 
     let { children } = $props();
 
@@ -35,6 +36,8 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary" />
 </svelte:head>
+
+<GoogleAnalytics />
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
     {@render children()}

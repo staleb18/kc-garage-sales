@@ -10,16 +10,16 @@
 
 <Header />
 
-<main class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+<main class="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
     <div class="text-center max-w-md">
-        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div class="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <i class="fa-solid fa-{$page.status === 404 ? 'map-location-dot' : 'triangle-exclamation'} text-blue-600 text-3xl"></i>
         </div>
-        <h1 class="text-6xl font-bold text-gray-900 mb-2">{$page.status}</h1>
-        <p class="text-xl font-medium text-gray-700 mb-2">
+        <h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-2">{$page.status}</h1>
+        <p class="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">
             {$page.status === 404 ? "Page not found" : "Something went wrong"}
         </p>
-        <p class="text-gray-500 mb-8">
+        <p class="text-gray-500 dark:text-gray-400 mb-8">
             {$page.status === 404
                 ? "The page you're looking for doesn't exist or the sale may have been removed."
                 : "We ran into an unexpected error. Please try again."}

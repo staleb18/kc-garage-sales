@@ -28,9 +28,6 @@
     onMount(async () => {
         if (!browser) return;
 
-        // Dynamically import Leaflet
-        L = await import("leaflet");
-
         // Import Leaflet CSS
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -47,8 +44,14 @@
         clusterCss2.href = "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css";
         document.head.appendChild(clusterCss2);
 
-        // Load MarkerCluster plugin
+        // Load Leaflet as a global script so window.L is set before MarkerCluster loads
+        await loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js");
+
+        // Load MarkerCluster plugin (extends window.L)
         await loadScript("https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js");
+
+        // Use the global L which has both Leaflet and MarkerCluster extensions
+        L = (window as any).L;
 
         // Wait for CSS to load
         await new Promise((resolve) => setTimeout(resolve, 100));

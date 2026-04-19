@@ -4,10 +4,21 @@ import { RESEND_API_KEY, ADMIN_EMAIL, RESEND_FROM_EMAIL } from "$env/static/priv
 import { PUBLIC_APP_URL } from "$env/static/public";
 import { Resend } from "resend";
 import { supabaseAdmin } from "$lib/supabase/server";
+import { checkRateLimit } from "$lib/rateLimit";
 
 const resend = new Resend(RESEND_API_KEY);
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+  // Rate limit: 10 reports per IP per hour
+  const ip = getClientAddress();
+  if (!checkRateLimit(`report:${ip}`, 10, 60 * 60 * 1000)) {
+    throw error(429, "Too many reports. Please try again later.");
+  }
+
   try {
     const { saleId, saleTitle, reason } = await request.json();
 
@@ -35,8 +46,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
           <p>A user has reported a garage sale listing.</p>
 
           <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-            <p><strong>Sale:</strong> ${saleTitle || "Unknown"}</p>
-            <p><strong>Reason:</strong> ${reason || "No reason provided"}</p>
+            <p><strong>Sale:</strong> ${escapeHtml(saleTitle || "Unknown")}</p>
+            <p><strong>Reason:</strong> ${escapeHtml(reason || "No reason provided")}</p>
             <p><strong>Link:</strong> <a href="${saleUrl}">${saleUrl}</a></p>
           </div>
 
