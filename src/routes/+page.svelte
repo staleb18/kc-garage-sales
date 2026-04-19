@@ -153,35 +153,19 @@
 
     <!-- Filters & View Toggle -->
     <section class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-[1000]">
-        <div class="max-w-7xl mx-auto px-4 py-3">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <!-- City & Category Filters -->
-                <div class="flex items-center gap-3 flex-wrap min-w-0 flex-1">
-                    <select
-                        bind:value={selectedCity}
-                        class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                        <option value="">All Cities</option>
-                        {#each cities as { city, count }}
-                            <option value={city}>{city} ({count})</option>
-                        {/each}
-                    </select>
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-2">
+            <!-- Row 1: City filter + View toggle -->
+            <div class="flex items-center justify-between gap-3">
+                <select
+                    bind:value={selectedCity}
+                    class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                    <option value="">All Cities</option>
+                    {#each cities as { city, count }}
+                        <option value={city}>{city} ({count})</option>
+                    {/each}
+                </select>
 
-                    <div class="category-scroll flex items-center gap-2 overflow-x-auto min-w-0 flex-1">
-                        <button
-                            onclick={() => (selectedCategory = "")}
-                            class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-                        >All</button>
-                        {#each CATEGORIES as category}
-                            <button
-                                onclick={() => (selectedCategory = category)}
-                                class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-                            >{category}</button>
-                        {/each}
-                    </div>
-                </div>
-
-                <!-- Right: count + view toggle -->
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
                         {filteredSales.length} sale{filteredSales.length !== 1 ? "s" : ""}
@@ -197,6 +181,20 @@
                         ><i class="fa-solid fa-list mr-1"></i>List</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Row 2: Category scroll (full width) -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                <button
+                    onclick={() => (selectedCategory = "")}
+                    class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                >All</button>
+                {#each CATEGORIES as category}
+                    <button
+                        onclick={() => (selectedCategory = category)}
+                        class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                    >{category}</button>
+                {/each}
             </div>
         </div>
     </section>
