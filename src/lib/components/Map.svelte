@@ -150,10 +150,18 @@
     });
 </script>
 
-<div
-    bind:this={mapContainer}
-    class="w-full h-full min-h-[400px] rounded-xl overflow-hidden"
-></div>
+<div class="relative w-full h-full min-h-[400px]">
+    <div bind:this={mapContainer} class="w-full h-full rounded-xl overflow-hidden"></div>
+    {#if sales.length === 0 && map}
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg px-6 py-4 text-center max-w-xs pointer-events-auto">
+                <i class="fa-solid fa-map-location-dot text-gray-300 text-3xl mb-2"></i>
+                <p class="text-gray-600 dark:text-gray-300 font-medium text-sm">No sales in this area yet</p>
+                <a href="/post" class="inline-block mt-2 text-blue-600 hover:underline text-sm font-medium">Post the first one!</a>
+            </div>
+        </div>
+    {/if}
+</div>
 
 <style>
     :global(.sale-marker) {

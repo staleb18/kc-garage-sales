@@ -82,9 +82,7 @@
 
         <div class="flex items-start gap-1 text-gray-600 dark:text-gray-400 text-sm mb-2">
             <i class="fa-solid fa-location-dot text-blue-600 mt-0.5"></i>
-            <span class="line-clamp-2"
-                >{sale.address}, {sale.city}, {sale.state} {sale.zip_code}</span
-            >
+            <span>{sale.city}, {sale.state}</span>
         </div>
 
         {#if sale.description}

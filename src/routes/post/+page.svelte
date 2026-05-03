@@ -283,7 +283,7 @@
                     <div>
                         <label
                             for="email"
-                            class="block text-sm font-medium text-gray-700 mb-1"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                         >
                             Email Address <span class="text-red-500">*</span>
                         </label>
@@ -307,7 +307,7 @@
                     <div>
                         <label
                             for="title"
-                            class="block text-sm font-medium text-gray-700 mb-1"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                         >
                             Sale Title <span class="text-red-500">*</span>
                         </label>
@@ -335,7 +335,7 @@
                     <div>
                         <label
                             for="description"
-                            class="block text-sm font-medium text-gray-700 mb-1"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                         >
                             Description
                         </label>
@@ -353,7 +353,7 @@
                     <!-- Photo Upload -->
                     <div>
                         <p
-                            class="block text-sm font-medium text-gray-700 mb-1"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                         >
                             Photos <span class="text-gray-400"
                                 >(up to {MAX_PHOTOS}, optional)</span
@@ -412,7 +412,7 @@
                         <div class="md:col-span-2">
                             <label
                                 for="address"
-                                class="block text-sm font-medium text-gray-700 mb-1"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                             >
                                 Street Address <span class="text-red-500">*</span>
                             </label>
@@ -431,7 +431,7 @@
                         <div>
                             <label
                                 for="city"
-                                class="block text-sm font-medium text-gray-700 mb-1"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                             >
                                 City <span class="text-red-500">*</span>
                             </label>
@@ -451,7 +451,7 @@
                             <div>
                                 <label
                                     for="state"
-                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                                 >
                                     State <span class="text-red-500">*</span>
                                 </label>
@@ -468,7 +468,7 @@
                             <div>
                                 <label
                                     for="zipCode"
-                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                                 >
                                     ZIP <span class="text-red-500">*</span>
                                 </label>
@@ -493,7 +493,7 @@
                         <div>
                             <label
                                 for="startDate"
-                                class="block text-sm font-medium text-gray-700 mb-1"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                             >
                                 Start Date <span class="text-red-500">*</span>
                             </label>
@@ -512,7 +512,7 @@
                         <div>
                             <label
                                 for="endDate"
-                                class="block text-sm font-medium text-gray-700 mb-1"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                             >
                                 End Date <span class="text-gray-400">(optional)</span>
                             </label>
@@ -537,7 +537,7 @@
                         <div>
                             <label
                                 for="startTime"
-                                class="block text-sm font-medium text-gray-700 mb-1"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                             >
                                 Start Time <span class="text-red-500">*</span>
                             </label>
@@ -554,7 +554,7 @@
                         <div>
                             <label
                                 for="endTime"
-                                class="block text-sm font-medium text-gray-700 mb-1"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                             >
                                 End Time <span class="text-red-500">*</span>
                             </label>
@@ -573,7 +573,7 @@
                     <!-- Categories -->
                     <div>
                         <p
-                            class="block text-sm font-medium text-gray-700 mb-2"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                         >
                             Categories <span class="text-gray-400"
                                 >(select up to 5)</span
@@ -617,8 +617,7 @@
                     </button>
 
                     <p class="text-xs text-center text-gray-500">
-                        By posting, you agree to our terms. Your email will not
-                        be shared publicly.
+                        By posting, you agree to our <a href="/terms" class="text-blue-600 hover:underline">Terms of Service</a>. Your email will not be shared publicly.
                     </p>
                 </form>
             </div>

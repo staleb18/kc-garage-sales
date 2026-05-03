@@ -1,4 +1,6 @@
 <script lang="ts">
+    import Header from "$lib/components/Header.svelte";
+    import Footer from "$lib/components/Footer.svelte";
     import type { PageData } from "./$types";
 
     let { data }: { data: PageData } = $props();
@@ -92,14 +94,13 @@
     />
 </svelte:head>
 
+<Header />
+
 <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
-    <!-- Header -->
+    <!-- Back link -->
     <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-700">
         <div class="max-w-4xl mx-auto px-4 py-4">
-            <a
-                href="/"
-                class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
+            <a href="/" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700">
                 <i class="fa-solid fa-arrow-left"></i>
                 <span>Back to all sales</span>
             </a>
@@ -254,20 +255,14 @@
                 {/if}
 
                 <!-- Contact -->
-                {#if sale.email}
-                    <div class="border-t pt-6">
-                        <h2 class="font-semibold text-gray-900 mb-3">
-                            Contact
-                        </h2>
-                        <a
-                            href="mailto:{sale.email}"
-                            class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                            <i class="fa-solid fa-envelope"></i>
-                            <span>Email seller</span>
-                        </a>
-                    </div>
-                {/if}
+                <div class="border-t pt-6">
+                    <h2 class="font-semibold text-gray-900 dark:text-white mb-3">
+                        Questions?
+                    </h2>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">
+                        Show up during the listed hours — garage sales are walk-in events. Check the address and time above.
+                    </p>
+                </div>
 
                 <!-- Share & Report -->
                 <div class="border-t pt-6 mt-6 flex items-center justify-between flex-wrap gap-4">
@@ -320,6 +315,8 @@
         </div>
     </div>
 </div>
+
+<Footer />
 
 <!-- Report Modal -->
 {#if showReportModal}

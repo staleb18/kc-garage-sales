@@ -12,6 +12,7 @@
 				<a href="/about" class="hover:text-white transition-colors">About</a>
 				<a href="/contact" class="hover:text-white transition-colors">Contact</a>
 				<a href="/privacy" class="hover:text-white transition-colors">Privacy</a>
+				<a href="/terms" class="hover:text-white transition-colors">Terms</a>
 			</div>
 
 			<div class="text-sm">
