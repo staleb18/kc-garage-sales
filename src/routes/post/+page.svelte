@@ -3,7 +3,7 @@
     import { PUBLIC_HCAPTCHA_SITEKEY } from "$env/static/public";
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
-    import { CATEGORIES } from "$lib/types";
+    import { CATEGORIES, CATEGORY_EMOJI } from "$lib/types";
 
     let isSubmitting = $state(false);
     let error = $state("");
@@ -584,14 +584,8 @@
                                 <button
                                     type="button"
                                     onclick={() => toggleCategory(category)}
-                                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors {selectedCategories.includes(
-                                        category,
-                                    )
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-                                >
-                                    {category}
-                                </button>
+                                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors {selectedCategories.includes(category) ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                                >{CATEGORY_EMOJI[category]} {category}</button>
                             {/each}
                         </div>
                     </div>

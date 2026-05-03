@@ -59,6 +59,24 @@ export const CATEGORIES = [
 	'Other'
 ] as const;
 
+export const CATEGORY_EMOJI: Record<string, string> = {
+	'Furniture': '🛋️',
+	'Clothing': '👕',
+	'Electronics': '📱',
+	'Kids & Baby': '👶',
+	'Tools': '🔧',
+	'Sports & Outdoors': '⚽',
+	'Kitchen & Home': '🏠',
+	'Books & Media': '📚',
+	'Antiques & Collectibles': '🏺',
+	'Jewelry & Accessories': '💍',
+	'Garden & Patio': '🌿',
+	'Automotive': '🚗',
+	'Holiday & Seasonal': '🎄',
+	'Arts & Crafts': '🎨',
+	'Other': '📦',
+};
+
 export const KC_METRO_CITIES = [
 	// Kansas
 	'Overland Park',

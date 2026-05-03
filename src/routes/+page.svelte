@@ -7,7 +7,18 @@
     import SaleCard from "$lib/components/SaleCard.svelte";
     import SaleCardSkeleton from "$lib/components/SaleCardSkeleton.svelte";
     import type { GarageSale } from "$lib/types";
-    import { CATEGORIES } from "$lib/types";
+    import { CATEGORIES, CATEGORY_EMOJI } from "$lib/types";
+
+    // Category scroll fade state
+    let categoryScrollEl = $state<HTMLDivElement | null>(null);
+    let showLeftFade = $state(false);
+    let showRightFade = $state(true);
+
+    function onCategoryScroll() {
+        if (!categoryScrollEl) return;
+        showLeftFade = categoryScrollEl.scrollLeft > 8;
+        showRightFade = categoryScrollEl.scrollLeft < categoryScrollEl.scrollWidth - categoryScrollEl.clientWidth - 8;
+    }
 
     // Dynamically import Map only on client side
     let MapComponent: any = $state(null);
@@ -74,6 +85,32 @@
         return Array.from(cityCount.entries())
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([city, count]) => ({ city, count }));
+    });
+
+    // Dynamic categories: only those with ≥1 sale in current city filter, sorted by count
+    let activeCategories = $derived.by(() => {
+        const salesInCity = selectedCity
+            ? data.sales.filter((s) => s.city === selectedCity)
+            : data.sales;
+
+        const counts = new Map<string, number>();
+        for (const sale of salesInCity) {
+            for (const cat of (sale.categories || [])) {
+                counts.set(cat, (counts.get(cat) || 0) + 1);
+            }
+        }
+
+        return CATEGORIES
+            .filter((cat) => (counts.get(cat) || 0) > 0)
+            .sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0))
+            .map((cat) => ({ name: cat, count: counts.get(cat) || 0 }));
+    });
+
+    // Reset selected category if it has no sales in current filter
+    $effect(() => {
+        if (selectedCategory && !activeCategories.find(c => c.name === selectedCategory)) {
+            selectedCategory = "";
+        }
     });
 
     let filteredSales = $derived.by(() => {
@@ -183,19 +220,48 @@
                 </div>
             </div>
 
-            <!-- Row 2: Category scroll (full width) -->
-            <div class="category-scroll flex items-center gap-2 overflow-x-auto pb-1">
-                <button
-                    onclick={() => (selectedCategory = "")}
-                    class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-                >All</button>
-                {#each CATEGORIES as category}
+            <!-- Row 2: Categories — wraps on desktop, scrolls on mobile -->
+            {#if activeCategories.length > 0}
+                <!-- Desktop: wrap layout, no scroll needed -->
+                <div class="hidden sm:flex flex-wrap gap-2">
                     <button
-                        onclick={() => (selectedCategory = category)}
-                        class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-                    >{category}</button>
-                {/each}
-            </div>
+                        onclick={() => (selectedCategory = "")}
+                        class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                    >All <span class="opacity-70">({data.sales.length})</span></button>
+                    {#each activeCategories as { name, count }}
+                        <button
+                            onclick={() => (selectedCategory = name)}
+                            class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === name ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                        >{CATEGORY_EMOJI[name]} {name} <span class="opacity-70">({count})</span></button>
+                    {/each}
+                </div>
+
+                <!-- Mobile: horizontal scroll with fade hints -->
+                <div class="sm:hidden relative">
+                    {#if showLeftFade}
+                        <div class="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-white dark:from-gray-900 z-10"></div>
+                    {/if}
+                    <div
+                        class="category-scroll flex items-center gap-2 overflow-x-auto pb-1"
+                        bind:this={categoryScrollEl}
+                        onscroll={onCategoryScroll}
+                    >
+                        <button
+                            onclick={() => (selectedCategory = "")}
+                            class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                        >All ({data.sales.length})</button>
+                        {#each activeCategories as { name, count }}
+                            <button
+                                onclick={() => (selectedCategory = name)}
+                                class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === name ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                            >{CATEGORY_EMOJI[name]} {name} ({count})</button>
+                        {/each}
+                    </div>
+                    {#if showRightFade}
+                        <div class="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-white dark:from-gray-900 z-10"></div>
+                    {/if}
+                </div>
+            {/if}
         </div>
     </section>
 
