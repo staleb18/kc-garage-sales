@@ -97,6 +97,21 @@
 
 <Header />
 
+{#if new Date(sale.end_date + "T23:59:59") < new Date()}
+    <div class="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+            <i class="fa-solid fa-clock-rotate-left text-amber-600 dark:text-amber-400 shrink-0"></i>
+            <p class="text-sm text-amber-800 dark:text-amber-300">
+                <span class="font-semibold">This sale has ended.</span>
+                It took place on {formatDate(sale.end_date)}. Check the home page for upcoming sales.
+            </p>
+            <a href="/" class="ml-auto shrink-0 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline whitespace-nowrap">
+                Find active sales →
+            </a>
+        </div>
+    </div>
+{/if}
+
 <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
     <!-- Back link -->
     <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-700">

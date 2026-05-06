@@ -8,6 +8,7 @@
     let isSubmitting = $state(false);
     let error = $state("");
     let success = $state(false);
+    let editToken = $state("");
     let captchaToken = $state("");
     let captchaWidgetId: string | null = null;
 
@@ -207,6 +208,7 @@
                 throw new Error(data.error || "Failed to create sale");
             }
 
+            editToken = data.editToken || "";
             success = true;
         } catch (err) {
             error = err instanceof Error ? err.message : "Something went wrong";
@@ -243,6 +245,30 @@
                 <p class="text-gray-600 mb-6">
                     We sent a verification link to <strong>{email}</strong>. Click it to publish your listing — it only takes a second.
                 </p>
+
+                <!-- Manage link -->
+                {#if editToken}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-4 mb-4 text-left">
+                        <div class="flex gap-3">
+                            <i class="fa-solid fa-link text-blue-500 text-lg mt-0.5 shrink-0"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-blue-800 mb-1">Save your management link</p>
+                                <p class="text-sm text-blue-700 mb-2">
+                                    Use this link to edit or delete your listing at any time — it's also in your email.
+                                </p>
+                                <a
+                                    href="/manage/{editToken}"
+                                    class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 underline break-all"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    /manage/{editToken}
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-xs shrink-0"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
 
                 <!-- Spam callout -->
                 <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-4 mb-6 text-left">

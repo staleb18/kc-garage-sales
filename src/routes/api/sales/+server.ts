@@ -272,6 +272,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       success: true,
       message: "Sale created. Check your email to verify.",
       id: sale.id,
+      editToken: sale.edit_token,
     });
   } catch (err) {
     console.error("Error creating sale:", err);
