@@ -226,8 +226,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     // Geocode the address
     const coords = await geocodeAddress(address, city, state, zip_code);
 
-    // Fall back to KC center if geocoding fails — sale still gets created
-    const finalCoords = coords ?? { lat: 39.0997, lng: -94.5786 };
+    if (!coords) {
+      throw error(400, "Could not find that address. Please double-check and try again.");
+    }
 
     // Create the sale
     const { data: sale, error: dbError } = await supabaseAdmin
@@ -240,8 +241,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
         city,
         state,
         zip_code,
-        latitude: finalCoords.lat,
-        longitude: finalCoords.lng,
+        latitude: coords.lat,
+        longitude: coords.lng,
         start_date,
         end_date: end_date || start_date,
         start_time,
