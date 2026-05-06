@@ -1,6 +1,7 @@
 <script lang="ts">
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
+    import { page } from "$app/state";
     import type { PageData } from "./$types";
 
     let { data }: { data: PageData } = $props();
@@ -24,14 +25,14 @@
 
     // Social sharing
     function copyLink() {
-        navigator.clipboard.writeText(window.location.href);
+        navigator.clipboard.writeText(page.url.href);
         linkCopied = true;
         setTimeout(() => (linkCopied = false), 2000);
     }
     let linkCopied = $state(false);
 
     function getShareUrl(platform: string): string {
-        const url = encodeURIComponent(window.location.href);
+        const url = encodeURIComponent(page.url.href);
         const text = encodeURIComponent(`Check out this garage sale: ${sale.title}`);
         if (platform === "facebook") return `https://www.facebook.com/sharer/sharer.php?u=${url}`;
         if (platform === "twitter") return `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
