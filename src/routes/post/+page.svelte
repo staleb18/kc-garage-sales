@@ -238,19 +238,32 @@
                     <i class="fa-solid fa-check text-green-600 text-2xl"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 mb-2">
-                    Check Your Email!
+                    You're almost live!
                 </h1>
                 <p class="text-gray-600 mb-6">
-                    We've sent a verification link to <strong>{email}</strong>.
-                    Click the link to publish your garage sale.
+                    We sent a verification link to <strong>{email}</strong>. Click it to publish your listing — it only takes a second.
                 </p>
+
+                <!-- Spam callout -->
+                <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-4 mb-6 text-left">
+                    <div class="flex gap-3">
+                        <i class="fa-solid fa-envelope-open-text text-amber-500 text-lg mt-0.5 shrink-0"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-800 mb-1">Don't see the email?</p>
+                            <p class="text-sm text-amber-700">
+                                It may have landed in your <strong>spam or junk folder</strong> — verification emails sometimes end up there. If you find it, mark it as "Not Spam" so future emails reach you.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <p class="text-sm text-gray-500">
-                    Didn't receive it? Check your spam folder or
+                    Still nothing after a minute?
                     <button
                         onclick={() => (success = false)}
-                        class="text-blue-600 hover:underline"
+                        class="text-blue-600 hover:underline font-medium"
                     >
-                        try again
+                        Go back and try again
                     </button>
                 </p>
             </div>
