@@ -7,6 +7,29 @@ import { PUBLIC_SUPABASE_URL } from "$env/static/public";
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
 
+async function geocodeAddress(
+  address: string,
+  city: string,
+  state: string,
+  zipCode: string,
+): Promise<{ lat: number; lng: number } | null> {
+  const fullAddress = `${address}, ${city}, ${state} ${zipCode}, USA`;
+  const encoded = encodeURIComponent(fullAddress);
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=1&countrycodes=us`,
+      { headers: { "User-Agent": "KCGarageSales/1.0" } },
+    );
+    const data = await response.json();
+    if (data && data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+  } catch (err) {
+    console.error("Geocoding error:", err);
+  }
+  return null;
+}
+
 async function uploadPhoto(file: File): Promise<string | null> {
   try {
     const fileExt = (file.name.split(".").pop() || "").toLowerCase();
@@ -48,10 +71,10 @@ export const actions: Actions = {
     const { token } = params;
     const formData = await request.formData();
 
-    // Verify token
+    // Fetch current sale to compare address for geocoding
     const { data: sale, error: fetchError } = await supabaseAdmin
       .from("garage_sales")
-      .select("id")
+      .select("id, address, city, state, zip_code")
       .eq("edit_token", token)
       .single();
 
@@ -59,8 +82,12 @@ export const actions: Actions = {
       return fail(404, { error: "Invalid edit link" });
     }
 
-    const title = formData.get("title") as string;
+    const title = (formData.get("title") as string)?.trim();
     const description = formData.get("description") as string;
+    const address = (formData.get("address") as string)?.trim();
+    const city = (formData.get("city") as string)?.trim();
+    const state = formData.get("state") as string;
+    const zip_code = (formData.get("zip_code") as string)?.trim();
     const start_date = formData.get("start_date") as string;
     const end_date = formData.get("end_date") as string;
     const start_time = formData.get("start_time") as string;
@@ -74,8 +101,40 @@ export const actions: Actions = {
       return fail(400, { error: "Invalid categories format" });
     }
 
-    if (!title || !start_date || !start_time || !end_time) {
+    if (!title || !address || !city || !state || !zip_code || !start_date || !start_time || !end_time) {
       return fail(400, { error: "Missing required fields" });
+    }
+
+    if (!["KS", "MO"].includes(state)) {
+      return fail(400, { error: "Invalid state. Must be KS or MO." });
+    }
+
+    if (!/^\d{5}$/.test(zip_code)) {
+      return fail(400, { error: "ZIP code must be 5 digits." });
+    }
+
+    if (end_date && end_date < start_date) {
+      return fail(400, { error: "End date must be on or after start date." });
+    }
+
+    if (end_time <= start_time) {
+      return fail(400, { error: "End time must be after start time." });
+    }
+
+    // Re-geocode only when address fields actually changed
+    const addressChanged =
+      address !== sale.address ||
+      city !== sale.city ||
+      state !== sale.state ||
+      zip_code !== sale.zip_code;
+
+    let coordsUpdate: { latitude?: number; longitude?: number } = {};
+    if (addressChanged) {
+      const coords = await geocodeAddress(address, city, state, zip_code);
+      if (!coords) {
+        return fail(400, { error: "Could not find that address. Please double-check and try again." });
+      }
+      coordsUpdate = { latitude: coords.lat, longitude: coords.lng };
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -83,6 +142,11 @@ export const actions: Actions = {
       .update({
         title,
         description: description || "",
+        address,
+        city,
+        state,
+        zip_code,
+        ...coordsUpdate,
         start_date,
         end_date: end_date || start_date,
         start_time,
