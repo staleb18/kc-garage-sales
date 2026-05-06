@@ -13,24 +13,21 @@
 
     // Load hCaptcha script
     if (browser) {
-        const script = document.createElement("script");
-        script.src = "https://js.hcaptcha.com/1/api.js?render=explicit";
-        script.async = true;
-        script.onload = () => {
+        (window as any).onHcaptchaLoad = () => {
             // @ts-ignore
-            if (window.hcaptcha) {
-                // @ts-ignore
-                captchaWidgetId = window.hcaptcha.render("hcaptcha-container", {
-                    sitekey: PUBLIC_HCAPTCHA_SITEKEY,
-                    callback: (token: string) => {
-                        captchaToken = token;
-                    },
-                    "expired-callback": () => {
-                        captchaToken = "";
-                    },
-                });
-            }
+            captchaWidgetId = window.hcaptcha.render("hcaptcha-container", {
+                sitekey: PUBLIC_HCAPTCHA_SITEKEY,
+                callback: (token: string) => {
+                    captchaToken = token;
+                },
+                "expired-callback": () => {
+                    captchaToken = "";
+                },
+            });
         };
+        const script = document.createElement("script");
+        script.src = "https://js.hcaptcha.com/1/api.js?render=explicit&onload=onHcaptchaLoad";
+        script.async = true;
         document.head.appendChild(script);
     }
 
