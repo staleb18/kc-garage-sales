@@ -84,13 +84,11 @@
         );
         return `https://www.google.com/maps/search/?api=1&query=${address}`;
     }
-</script>
 
-<svelte:head>
-    {@const saleUrl = `https://kcgaragesales.com/sale/${sale.id}`}
-    {@const saleDescription = sale.description || `Garage sale in ${sale.city}, ${sale.state} on ${sale.start_date}`}
-    {@const saleImage = sale.photos && sale.photos.length > 0 ? sale.photos[0] : 'https://kcgaragesales.com/og-image.svg'}
-    {@const jsonLd = JSON.stringify({
+    const saleUrl = $derived(`https://kcgaragesales.com/sale/${sale.id}`);
+    const saleDescription = $derived(sale.description || `Garage sale in ${sale.city}, ${sale.state} on ${sale.start_date}`);
+    const saleImage = $derived(sale.photos && sale.photos.length > 0 ? sale.photos[0] : 'https://kcgaragesales.com/og-image.svg');
+    const jsonLd = $derived(JSON.stringify({
         "@context": "https://schema.org",
         "@type": "Event",
         "name": sale.title,
@@ -118,7 +116,10 @@
         },
         "image": saleImage,
         "url": saleUrl
-    })}
+    }));
+</script>
+
+<svelte:head>
     <title>{sale.title} — {sale.city}, {sale.state} Garage Sale | KC Garage Sales</title>
     <meta name="description" content={saleDescription} />
     <link rel="canonical" href={saleUrl} />
