@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 
   if (error) {
     console.error("Error fetching sales:", error);
-    return { authenticated: true, sales: [] };
+    return { authenticated: true, sales: [], fetchError: error.message };
   }
 
   const salesWithReports = (sales || []).map((s: any) => ({
@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
     sale_reports: undefined,
   }));
 
-  return { authenticated: true, sales: salesWithReports };
+  return { authenticated: true, sales: salesWithReports, fetchError: null };
 };
 
 export const actions: Actions = {
