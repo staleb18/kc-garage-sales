@@ -8,7 +8,7 @@
     }
 
     interface Props {
-        data: { authenticated: boolean; sales: SaleWithReports[]; fetchError?: string | null };
+        data: { authenticated: boolean; sales: SaleWithReports[] };
         form: { error?: string; success?: boolean; deleted?: boolean; updated?: boolean } | null;
     }
 
@@ -123,13 +123,6 @@
         </header>
 
         <main class="max-w-7xl mx-auto px-4 py-6">
-
-            <!-- DB error banner -->
-            {#if data.fetchError}
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-                    <strong>Database error:</strong> {data.fetchError}
-                </div>
-            {/if}
 
             <!-- Stats -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
