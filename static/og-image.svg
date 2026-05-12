@@ -1,0 +1,43 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1d4ed8"/>
+      <stop offset="100%" style="stop-color:#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="1050" cy="80" r="200" fill="white" fill-opacity="0.04"/>
+  <circle cx="150" cy="550" r="160" fill="white" fill-opacity="0.04"/>
+  <circle cx="980" cy="500" r="120" fill="white" fill-opacity="0.03"/>
+
+  <!-- Amber accent bar -->
+  <rect x="100" y="270" width="80" height="8" rx="4" fill="url(#accent)"/>
+
+  <!-- Price tag icon shape -->
+  <g transform="translate(100, 120)">
+    <rect x="0" y="0" width="72" height="72" rx="16" fill="#f59e0b"/>
+    <text x="36" y="52" font-family="Arial, sans-serif" font-size="38" fill="white" text-anchor="middle">🏷</text>
+  </g>
+
+  <!-- Main title -->
+  <text x="100" y="230" font-family="Arial Black, Arial, sans-serif" font-size="72" font-weight="900" fill="white" letter-spacing="-1">KC Garage Sales</text>
+
+  <!-- Tagline -->
+  <text x="100" y="320" font-family="Arial, sans-serif" font-size="34" fill="#93c5fd">Find garage sales, yard sales &amp; estate sales</text>
+  <text x="100" y="368" font-family="Arial, sans-serif" font-size="34" fill="#93c5fd">in the Kansas City metro area</text>
+
+  <!-- CTA pill -->
+  <rect x="100" y="420" width="300" height="60" rx="30" fill="url(#accent)"/>
+  <text x="250" y="458" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="white" text-anchor="middle">Post Your Sale Free</text>
+
+  <!-- Domain -->
+  <text x="1100" y="590" font-family="Arial, sans-serif" font-size="26" fill="#93c5fd" text-anchor="end">kcgaragesales.com</text>
+</svg>

@@ -87,12 +87,50 @@
 </script>
 
 <svelte:head>
-    <title>{sale.title} - KC Garage Sales</title>
-    <meta
-        name="description"
-        content={sale.description ||
-            `Garage sale in ${sale.city}, ${sale.state}`}
-    />
+    {@const saleUrl = `https://kcgaragesales.com/sale/${sale.id}`}
+    {@const saleDescription = sale.description || `Garage sale in ${sale.city}, ${sale.state} on ${sale.start_date}`}
+    {@const saleImage = sale.photos && sale.photos.length > 0 ? sale.photos[0] : 'https://kcgaragesales.com/og-image.svg'}
+    {@const jsonLd = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": sale.title,
+        "description": saleDescription,
+        "startDate": `${sale.start_date}T${sale.start_time}`,
+        "endDate": `${sale.end_date}T${sale.end_time}`,
+        "eventStatus": "https://schema.org/EventScheduled",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "location": {
+            "@type": "Place",
+            "name": sale.title,
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": sale.address,
+                "addressLocality": sale.city,
+                "addressRegion": sale.state,
+                "postalCode": sale.zip_code,
+                "addressCountry": "US"
+            }
+        },
+        "organizer": {
+            "@type": "Organization",
+            "name": "KC Garage Sales",
+            "url": "https://kcgaragesales.com"
+        },
+        "image": saleImage,
+        "url": saleUrl
+    })}
+    <title>{sale.title} — {sale.city}, {sale.state} Garage Sale | KC Garage Sales</title>
+    <meta name="description" content={saleDescription} />
+    <link rel="canonical" href={saleUrl} />
+    <meta property="og:title" content="{sale.title} — {sale.city} Garage Sale" />
+    <meta property="og:description" content={saleDescription} />
+    <meta property="og:url" content={saleUrl} />
+    <meta property="og:type" content="article" />
+    <meta property="og:image" content={saleImage} />
+    <meta name="twitter:title" content="{sale.title} — {sale.city} Garage Sale" />
+    <meta name="twitter:description" content={saleDescription} />
+    <meta name="twitter:image" content={saleImage} />
+    {@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
 
 <Header />

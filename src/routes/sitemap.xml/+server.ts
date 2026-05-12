@@ -7,7 +7,35 @@ const STATIC_PAGES = [
   { path: "/about", changefreq: "monthly" },
   { path: "/contact", changefreq: "monthly" },
   { path: "/privacy", changefreq: "monthly" },
+  { path: "/terms", changefreq: "monthly" },
   { path: "/post", changefreq: "monthly" },
+];
+
+const CITY_SLUGS = [
+  "overland-park",
+  "olathe",
+  "kansas-city",
+  "shawnee",
+  "lenexa",
+  "leawood",
+  "prairie-village",
+  "gardner",
+  "merriam",
+  "mission",
+  "roeland-park",
+  "independence",
+  "lees-summit",
+  "blue-springs",
+  "liberty",
+  "gladstone",
+  "raytown",
+  "grandview",
+  "belton",
+  "raymore",
+  "grain-valley",
+  "north-kansas-city",
+  "parkville",
+  "platte-city",
 ];
 
 export const GET: RequestHandler = async () => {
@@ -25,6 +53,12 @@ ${STATIC_PAGES.map(
   (p) => `  <url>
     <loc>${baseUrl}${p.path}</loc>
     <changefreq>${p.changefreq}</changefreq>
+  </url>`
+).join("\n")}
+${CITY_SLUGS.map(
+  (slug) => `  <url>
+    <loc>${baseUrl}/${slug}</loc>
+    <changefreq>daily</changefreq>
   </url>`
 ).join("\n")}
 ${(sales || [])

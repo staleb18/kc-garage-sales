@@ -2,6 +2,7 @@ User-agent: *
 Disallow: /admin
 Disallow: /manage/
 Disallow: /verify/
+Disallow: /api/
 Allow: /
 
 Sitemap: https://kcgaragesales.com/sitemap.xml
