@@ -37,6 +37,26 @@
         const now = new Date();
         return now.getTime() - created.getTime() < 24 * 60 * 60 * 1000;
     }
+
+    function isToday(): boolean {
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+        return sale.start_date <= todayStr && todayStr <= sale.end_date;
+    }
+
+    function isThisWeekend(): boolean {
+        if (isToday()) return false;
+        const today = new Date();
+        const day = today.getDay(); // 0=Sun, 6=Sat
+        const daysUntilSat = day === 6 ? 0 : (6 - day);
+        const sat = new Date(today);
+        sat.setDate(today.getDate() + daysUntilSat);
+        const sun = new Date(sat);
+        sun.setDate(sat.getDate() + 1);
+        const satStr = sat.toISOString().slice(0, 10);
+        const sunStr = sun.toISOString().slice(0, 10);
+        return sale.start_date <= sunStr && sale.end_date >= satStr;
+    }
 </script>
 
 <a
@@ -65,10 +85,16 @@
                 <i class="fa-solid fa-star mr-1"></i>Featured
             </div>
         {/if}
-        {#if isNew()}
-            <div
-                class="absolute top-2 right-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded"
-            >
+        {#if isToday()}
+            <div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded">
+                <i class="fa-solid fa-fire mr-1"></i>Today
+            </div>
+        {:else if isThisWeekend()}
+            <div class="absolute top-2 right-2 bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded">
+                <i class="fa-solid fa-calendar-week mr-1"></i>This Weekend
+            </div>
+        {:else if isNew()}
+            <div class="absolute top-2 right-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded">
                 New
             </div>
         {/if}

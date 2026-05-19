@@ -1,19 +1,7 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { browser } from "$app/environment";
 
-    let isDark = $state(false);
     let mobileMenuOpen = $state(false);
-
-    if (browser) {
-        isDark = document.documentElement.classList.contains("dark");
-    }
-
-    function toggleDark() {
-        isDark = !isDark;
-        document.documentElement.classList.toggle("dark", isDark);
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-    }
 
     function closeMobileMenu() {
         mobileMenuOpen = false;

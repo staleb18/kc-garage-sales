@@ -1,17 +1,7 @@
 <script lang="ts">
     import "../app.css";
-    import { browser } from "$app/environment";
 
     let { children } = $props();
-
-    // Apply saved theme on load
-    if (browser) {
-        const saved = localStorage.getItem("theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        if (saved === "dark" || (!saved && prefersDark)) {
-            document.documentElement.classList.add("dark");
-        }
-    }
 </script>
 
 <svelte:head>
@@ -48,6 +38,6 @@
     <meta name="twitter:image" content="https://kcgaragesales.com/og-image.svg" />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+<div class="min-h-screen bg-gray-50">
     {@render children()}
 </div>

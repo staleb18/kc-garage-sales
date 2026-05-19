@@ -186,6 +186,13 @@
                     <i class="fa-solid fa-plus mr-2"></i>Post Sale
                 </a>
             </div>
+            <!-- Trust signals -->
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 text-blue-100 text-sm">
+                <span><i class="fa-solid fa-check-circle mr-1 text-amber-400"></i>Free to post</span>
+                <span><i class="fa-solid fa-map-marker-alt mr-1 text-amber-400"></i>KC Metro only</span>
+                <span><i class="fa-solid fa-shield-halved mr-1 text-amber-400"></i>No account needed</span>
+                <span><i class="fa-solid fa-tag mr-1 text-amber-400"></i>{data.sales.length} active sale{data.sales.length !== 1 ? 's' : ''}</span>
+            </div>
         </div>
     </section>
 
