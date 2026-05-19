@@ -10,7 +10,7 @@
 						<a href="/kansas-city" class="hover:text-blue-400 transition-colors">Kansas City, MO</a>
 						<a href="/overland-park" class="hover:text-blue-400 transition-colors">Overland Park</a>
 						<a href="/olathe" class="hover:text-blue-400 transition-colors">Olathe</a>
-						<a href="/lee-s-summit" class="hover:text-blue-400 transition-colors">Lee's Summit</a>
+						<a href="/lees-summit" class="hover:text-blue-400 transition-colors">Lee's Summit</a>
 						<a href="/independence" class="hover:text-blue-400 transition-colors">Independence</a>
 						<a href="/shawnee" class="hover:text-blue-400 transition-colors">Shawnee</a>
 						<a href="/lenexa" class="hover:text-blue-400 transition-colors">Lenexa</a>

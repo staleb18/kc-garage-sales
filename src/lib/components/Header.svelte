@@ -24,33 +24,19 @@
 
             <!-- Desktop Navigation -->
             <nav class="hidden md:flex items-center gap-4">
-                <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/"}>Home</a>
-                <a href="/about" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/about"}>About</a>
-                <a href="/contact" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/contact"}>Contact</a>
-                <button
-                    onclick={toggleDark}
-                    class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    aria-label="Toggle dark mode"
-                >
-                    <i class="fa-solid {isDark ? 'fa-sun' : 'fa-moon'}"></i>
-                </button>
+                <a href="/" class="text-gray-600 hover:text-blue-600 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/"}>Home</a>
+                <a href="/about" class="text-gray-600 hover:text-blue-600 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/about"}>About</a>
+                <a href="/contact" class="text-gray-600 hover:text-blue-600 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/contact"}>Contact</a>
                 <a href="/post" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                     <i class="fa-solid fa-plus mr-2"></i>Post a Sale
                 </a>
             </nav>
 
-            <!-- Mobile: dark mode + hamburger -->
+            <!-- Mobile: hamburger -->
             <div class="md:hidden flex items-center gap-2">
                 <button
-                    onclick={toggleDark}
-                    class="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    aria-label="Toggle dark mode"
-                >
-                    <i class="fa-solid {isDark ? 'fa-sun' : 'fa-moon'}"></i>
-                </button>
-                <button
                     onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
-                    class="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    class="p-2 text-gray-500 rounded-lg hover:bg-gray-100 transition-colors"
                     aria-label="Toggle menu"
                 >
                     <i class="fa-solid {mobileMenuOpen ? 'fa-times' : 'fa-bars'}"></i>
