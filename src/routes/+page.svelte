@@ -40,7 +40,7 @@
 
     // Read initial state from URL params
     const params = $page.url.searchParams;
-    let viewMode = $state<"map" | "list">((params.get("view") as "map" | "list") || "map");
+    let viewMode = $state<"map" | "list">((params.get("view") as "map" | "list") || (browser && window.innerWidth < 768 ? "list" : "map"));
     let selectedCategory = $state<string>(params.get("category") || "");
     let selectedCity = $state<string>(params.get("city") || "");
     let searchQuery = $state<string>(params.get("q") || "");
@@ -162,36 +162,38 @@
 
 <Header />
 
-<main class="min-h-screen">
+<main class="min-h-screen pb-20 md:pb-0">
     <!-- Hero Section (compact) -->
-    <section class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-8 px-4">
+    <section class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-6 px-4">
         <div class="max-w-7xl mx-auto text-center">
-            <h1 class="text-3xl md:text-4xl font-bold mb-6">
+            <h1 class="text-2xl md:text-4xl font-bold mb-4">
                 Find Garage Sales in <span class="text-amber-400">Kansas City</span>
             </h1>
-            <div class="max-w-2xl mx-auto flex flex-wrap gap-2">
+            <div class="max-w-2xl mx-auto flex gap-2">
                 <div class="flex-1 relative">
-                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm"></i>
                     <input
                         type="text"
                         bind:value={searchQuery}
-                        placeholder="Search by city, item, or keyword..."
-                        class="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        placeholder="Search sales, cities..."
+                        class="w-full pl-10 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm"
                     />
                 </div>
                 <a
                     href="/post"
-                    class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap"
+                    class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap text-sm"
                 >
-                    <i class="fa-solid fa-plus mr-2"></i>Post Sale
+                    <i class="fa-solid fa-plus mr-1"></i>Post Sale
                 </a>
             </div>
             <!-- Trust signals -->
-            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 text-blue-100 text-sm">
+            <div class="flex flex-wrap justify-center gap-x-5 gap-y-1.5 mt-3 text-blue-100 text-xs">
                 <span><i class="fa-solid fa-check-circle mr-1 text-amber-400"></i>Free to post</span>
-                <span><i class="fa-solid fa-map-marker-alt mr-1 text-amber-400"></i>KC Metro only</span>
+                <span><i class="fa-solid fa-map-marker-alt mr-1 text-amber-400"></i>KC Metro</span>
                 <span><i class="fa-solid fa-shield-halved mr-1 text-amber-400"></i>No account needed</span>
-                <span><i class="fa-solid fa-tag mr-1 text-amber-400"></i>{data.sales.length} active sale{data.sales.length !== 1 ? 's' : ''}</span>
+                {#if data.sales.length > 0}
+                    <span><i class="fa-solid fa-tag mr-1 text-amber-400"></i>{data.sales.length} active sale{data.sales.length !== 1 ? 's' : ''}</span>
+                {/if}
             </div>
         </div>
     </section>
@@ -215,15 +217,15 @@
                     <span class="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
                         {filteredSales.length} sale{filteredSales.length !== 1 ? "s" : ""}
                     </span>
-                    <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                         <button
                             onclick={() => (viewMode = "map")}
-                            class="px-3 py-1.5 rounded text-sm font-medium transition-colors {viewMode === 'map' ? 'bg-white dark:bg-gray-700 shadow text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
-                        ><i class="fa-solid fa-map mr-1"></i>Map</button>
+                            class="px-4 py-2 rounded text-sm font-medium transition-colors {viewMode === 'map' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}"
+                        ><i class="fa-solid fa-map mr-1.5"></i>Map</button>
                         <button
                             onclick={() => (viewMode = "list")}
-                            class="px-3 py-1.5 rounded text-sm font-medium transition-colors {viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
-                        ><i class="fa-solid fa-list mr-1"></i>List</button>
+                            class="px-4 py-2 rounded text-sm font-medium transition-colors {viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}"
+                        ><i class="fa-solid fa-list mr-1.5"></i>List</button>
                     </div>
                 </div>
             </div>
@@ -278,7 +280,7 @@
         {#if viewMode === "map"}
             <div class="grid lg:grid-cols-2 gap-6">
                 <!-- Map -->
-                <div class="h-[500px] lg:h-[calc(100vh-16rem)] rounded-xl overflow-hidden shadow-sm border lg:sticky lg:top-32">
+                <div class="h-[280px] md:h-[500px] lg:h-[calc(100vh-16rem)] rounded-xl overflow-hidden shadow-sm border lg:sticky lg:top-32">
                     {#if MapComponent}
                         <MapComponent sales={filteredSales} onSaleClick={handleSaleClick} />
                     {:else}
@@ -289,12 +291,14 @@
                 <!-- Sale Cards -->
                 <div class="space-y-4">
                     {#if filteredSales.length === 0}
-                        <div class="text-center py-12 text-gray-500">
-                            <i class="fa-solid fa-tag text-4xl mb-4"></i>
-                            <p class="text-lg font-medium">No garage sales found</p>
-                            <p class="text-sm mt-1">Try adjusting your filters or be the first to post!</p>
-                            <a href="/post" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
-                                Post a Sale
+                        <div class="text-center py-10 px-4">
+                            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fa-solid fa-magnifying-glass text-blue-400 text-2xl"></i>
+                            </div>
+                            <p class="text-lg font-semibold text-gray-800">No sales found</p>
+                            <p class="text-sm text-gray-500 mt-1 mb-4">Be the first to post a garage sale in KC!</p>
+                            <a href="/post" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
+                                <i class="fa-solid fa-plus mr-2"></i>Post a Sale — Free
                             </a>
                         </div>
                     {:else}
@@ -328,12 +332,14 @@
                         <SaleCardSkeleton />
                     {/each}
                 {:else if filteredSales.length === 0}
-                    <div class="col-span-full text-center py-12 text-gray-500">
-                        <i class="fa-solid fa-tag text-4xl mb-4"></i>
-                        <p class="text-lg font-medium">No garage sales found</p>
-                        <p class="text-sm mt-1">Be the first to post one!</p>
-                        <a href="/post" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
-                            Post a Sale
+                    <div class="col-span-full text-center py-10 px-4">
+                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-magnifying-glass text-blue-400 text-2xl"></i>
+                        </div>
+                        <p class="text-lg font-semibold text-gray-800">No sales found</p>
+                        <p class="text-sm text-gray-500 mt-1 mb-4">Be the first to post a garage sale in KC!</p>
+                        <a href="/post" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
+                            <i class="fa-solid fa-plus mr-2"></i>Post a Sale — Free
                         </a>
                     </div>
                 {:else}
@@ -388,6 +394,13 @@
         </div>
     </section>
 </main>
+
+<!-- Sticky mobile CTA -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 bg-white border-t border-gray-200 shadow-lg">
+    <a href="/post" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+        <i class="fa-solid fa-plus mr-2"></i>Post a Garage Sale — Free
+    </a>
+</div>
 
 <Footer />
 
