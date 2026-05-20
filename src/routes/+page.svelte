@@ -169,7 +169,7 @@
 
 <Header />
 
-<main class="min-h-screen pb-20 md:pb-0">
+<main class="pb-20 md:pb-0">
     <!-- Hero Section (compact) -->
     <section class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-6 px-4">
         <div class="max-w-7xl mx-auto text-center">
