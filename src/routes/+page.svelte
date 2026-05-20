@@ -40,7 +40,14 @@
 
     // Read initial state from URL params
     const params = $page.url.searchParams;
-    let viewMode = $state<"map" | "list">((params.get("view") as "map" | "list") || (browser && window.innerWidth < 768 ? "list" : "map"));
+    let viewMode = $state<"map" | "list">((params.get("view") as "map" | "list") || "map");
+
+    // Default to list on mobile — runs only in browser after mount
+    $effect(() => {
+        if (!params.get("view") && window.innerWidth < 768) {
+            viewMode = "list";
+        }
+    });
     let selectedCategory = $state<string>(params.get("category") || "");
     let selectedCity = $state<string>(params.get("city") || "");
     let searchQuery = $state<string>(params.get("q") || "");
@@ -297,7 +304,7 @@
                             </div>
                             <p class="text-lg font-semibold text-gray-800">No sales found</p>
                             <p class="text-sm text-gray-500 mt-1 mb-4">Be the first to post a garage sale in KC!</p>
-                            <a href="/post" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
+                            <a href="/post" class="hidden md:inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
                                 <i class="fa-solid fa-plus mr-2"></i>Post a Sale — Free
                             </a>
                         </div>
@@ -338,7 +345,7 @@
                         </div>
                         <p class="text-lg font-semibold text-gray-800">No sales found</p>
                         <p class="text-sm text-gray-500 mt-1 mb-4">Be the first to post a garage sale in KC!</p>
-                        <a href="/post" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
+                        <a href="/post" class="hidden md:inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
                             <i class="fa-solid fa-plus mr-2"></i>Post a Sale — Free
                         </a>
                     </div>
@@ -376,8 +383,8 @@
         {/if}
     </section>
 
-    <!-- CTA Section -->
-    <section class="bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 py-10 px-4 mt-4">
+    <!-- CTA Section — hidden on mobile, sticky bar replaces it -->
+    <section class="hidden md:block bg-gray-50 border-t py-10 px-4 mt-4">
         <div class="max-w-4xl mx-auto text-center">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 Have a Garage Sale Coming Up?
