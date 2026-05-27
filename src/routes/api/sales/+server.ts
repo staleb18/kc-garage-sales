@@ -2,7 +2,7 @@ import { json, error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { supabaseAdmin } from "$lib/supabase/server";
 import { PUBLIC_APP_URL, PUBLIC_SUPABASE_URL } from "$env/static/public";
-import { RESEND_API_KEY, HCAPTCHA_SECRET, RESEND_FROM_EMAIL } from "$env/static/private";
+import { RESEND_API_KEY, RESEND_FROM_EMAIL } from "$env/static/private";
 import { Resend } from "resend";
 import { checkRateLimit } from "$lib/rateLimit";
 
@@ -13,21 +13,6 @@ const resend = new Resend(RESEND_API_KEY);
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-// Verify hCaptcha token
-async function verifyCaptcha(token: string): Promise<boolean> {
-  try {
-    const response = await fetch("https://api.hcaptcha.com/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `response=${token}&secret=${HCAPTCHA_SECRET}`,
-    });
-    const data = await response.json();
-    return data.success === true;
-  } catch {
-    return false;
-  }
 }
 
 // Upload photo to Supabase Storage
@@ -167,8 +152,6 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     const end_time = formData.get("end_time") as string;
     const categoriesJson = formData.get("categories") as string;
     const photoFiles = formData.getAll("photos") as File[];
-    const captchaToken = formData.get("h-captcha-response") as string;
-
     let categories: string[] = [];
     try {
       categories = categoriesJson ? JSON.parse(categoriesJson) : [];
@@ -196,13 +179,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     if (end_time <= start_time) {
       throw error(400, "End time must be after start time.");
     }
-    if (!captchaToken) {
-      throw error(400, "Captcha is required");
-    }
-
-    // Run captcha verification, geocoding, and photo uploads in parallel
-    const [captchaValid, coords, photos] = await Promise.all([
-      verifyCaptcha(captchaToken),
+    // Run geocoding and photo uploads in parallel
+    const [coords, photos] = await Promise.all([
       geocodeAddress(address, city, state, zip_code),
       Promise.all(
         photoFiles
@@ -211,9 +189,6 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       ).then((results) => results.filter((url): url is string => url !== null)),
     ]);
 
-    if (!captchaValid) {
-      throw error(400, "Captcha verification failed. Please try again.");
-    }
     if (!coords) {
       throw error(400, "Could not find that address. Please double-check and try again.");
     }

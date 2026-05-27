@@ -1,6 +1,5 @@
 <script lang="ts">
     import { browser } from "$app/environment";
-    import { PUBLIC_HCAPTCHA_SITEKEY } from "$env/static/public";
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import { CATEGORIES, CATEGORY_EMOJI } from "$lib/types";
@@ -9,37 +8,6 @@
     let error = $state("");
     let success = $state(false);
     let editToken = $state("");
-    let captchaToken = $state("");
-    let captchaWidgetId: string | null = null;
-
-    // Load hCaptcha script
-    if (browser) {
-        (window as any).onHcaptchaLoad = () => {
-            // @ts-ignore
-            captchaWidgetId = window.hcaptcha.render("hcaptcha-container", {
-                sitekey: PUBLIC_HCAPTCHA_SITEKEY,
-                callback: (token: string) => {
-                    captchaToken = token;
-                },
-                "expired-callback": () => {
-                    captchaToken = "";
-                },
-            });
-        };
-        const script = document.createElement("script");
-        script.src = "https://js.hcaptcha.com/1/api.js?render=explicit&onload=onHcaptchaLoad";
-        script.async = true;
-        document.head.appendChild(script);
-    }
-
-    function resetCaptcha() {
-        // @ts-ignore
-        if (browser && window.hcaptcha && captchaWidgetId !== null) {
-            // @ts-ignore
-            window.hcaptcha.reset(captchaWidgetId);
-            captchaToken = "";
-        }
-    }
 
     // Form fields
     let email = $state("");
@@ -213,11 +181,6 @@
             return;
         }
 
-        if (!captchaToken) {
-            error = "Please complete the captcha";
-            return;
-        }
-
         isSubmitting = true;
 
         try {
@@ -234,7 +197,6 @@
             formData.append("start_time", startTime);
             formData.append("end_time", endTime);
             formData.append("categories", JSON.stringify(selectedCategories));
-            formData.append("h-captcha-response", captchaToken);
             const compressed = await Promise.all(photoFiles.map((f) => compressImage(f)));
             for (const photo of compressed) {
                 formData.append("photos", photo);
@@ -255,7 +217,6 @@
             success = true;
         } catch (err) {
             error = err instanceof Error ? err.message : "Something went wrong";
-            resetCaptcha();
         } finally {
             isSubmitting = false;
         }
@@ -667,11 +628,6 @@
                                 >{CATEGORY_EMOJI[category]} {category}</button>
                             {/each}
                         </div>
-                    </div>
-
-                    <!-- hCaptcha -->
-                    <div>
-                        <div id="hcaptcha-container"></div>
                     </div>
 
                     <!-- Submit -->
