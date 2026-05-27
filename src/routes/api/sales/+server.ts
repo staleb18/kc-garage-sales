@@ -74,14 +74,15 @@ async function geocodeAddress(
 ): Promise<{ lat: number; lng: number } | null> {
   const fullAddress = `${address}, ${city}, ${state} ${zipCode}, USA`;
   const encoded = encodeURIComponent(fullAddress);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
 
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=1&countrycodes=us`,
       {
-        headers: {
-          "User-Agent": "KCGarageSales/1.0",
-        },
+        headers: { "User-Agent": "KCGarageSales/1.0" },
+        signal: controller.signal,
       },
     );
     const data = await response.json();
@@ -94,6 +95,8 @@ async function geocodeAddress(
     }
   } catch (err) {
     console.error("Geocoding error:", err);
+  } finally {
+    clearTimeout(timeout);
   }
 
   return null;
@@ -173,59 +176,44 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       throw error(400, "Invalid categories format");
     }
 
-    // Verify captcha
-    if (!captchaToken) {
-      throw error(400, "Captcha is required");
-    }
-    const captchaValid = await verifyCaptcha(captchaToken);
-    if (!captchaValid) {
-      throw error(400, "Captcha verification failed. Please try again.");
-    }
-
-    // Validate required fields
+    // Validate required fields before doing any async work
     if (!email || !title || !address || !city || !state || !zip_code) {
       throw error(400, "Missing required fields");
     }
-
     if (!start_date || !start_time || !end_time) {
       throw error(400, "Missing date or time");
     }
-
-    // Validate state
     if (!["KS", "MO"].includes(state)) {
       throw error(400, "Invalid state. Must be KS or MO.");
     }
-
-    // Validate zip code format
     if (!/^\d{5}$/.test(zip_code)) {
       throw error(400, "ZIP code must be 5 digits.");
     }
-
-    // Validate date range
     const effectiveEndDate = end_date || start_date;
     if (effectiveEndDate < start_date) {
       throw error(400, "End date must be on or after start date.");
     }
-
-    // Validate time range
     if (end_time <= start_time) {
       throw error(400, "End time must be after start time.");
     }
-
-    // Upload photos if provided
-    let photos: string[] = [];
-    for (const photo of photoFiles) {
-      if (photo && photo.size > 0) {
-        const photoUrl = await uploadPhoto(photo);
-        if (photoUrl) {
-          photos.push(photoUrl);
-        }
-      }
+    if (!captchaToken) {
+      throw error(400, "Captcha is required");
     }
 
-    // Geocode the address
-    const coords = await geocodeAddress(address, city, state, zip_code);
+    // Run captcha verification, geocoding, and photo uploads in parallel
+    const [captchaValid, coords, photos] = await Promise.all([
+      verifyCaptcha(captchaToken),
+      geocodeAddress(address, city, state, zip_code),
+      Promise.all(
+        photoFiles
+          .filter((p) => p && p.size > 0)
+          .map((p) => uploadPhoto(p))
+      ).then((results) => results.filter((url): url is string => url !== null)),
+    ]);
 
+    if (!captchaValid) {
+      throw error(400, "Captcha verification failed. Please try again.");
+    }
     if (!coords) {
       throw error(400, "Could not find that address. Please double-check and try again.");
     }
