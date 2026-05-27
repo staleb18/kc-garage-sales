@@ -136,6 +136,48 @@
     tomorrow.setDate(tomorrow.getDate() + 1);
     const minDate = tomorrow.toISOString().split("T")[0];
 
+    async function compressImage(file: File, maxMB = 0.85): Promise<File> {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                const MAX_DIM = 1400;
+                let { width, height } = img;
+                if (width > MAX_DIM || height > MAX_DIM) {
+                    if (width >= height) {
+                        height = Math.round((height * MAX_DIM) / width);
+                        width = MAX_DIM;
+                    } else {
+                        width = Math.round((width * MAX_DIM) / height);
+                        height = MAX_DIM;
+                    }
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+
+                let quality = 0.82;
+                const tryBlob = () => {
+                    canvas.toBlob((blob) => {
+                        if (!blob) { resolve(file); return; }
+                        if (blob.size > maxMB * 1024 * 1024 && quality > 0.3) {
+                            quality -= 0.1;
+                            tryBlob();
+                            return;
+                        }
+                        const name = file.name.replace(/\.[^.]+$/, ".jpg");
+                        resolve(new File([blob], name, { type: "image/jpeg" }));
+                    }, "image/jpeg", quality);
+                };
+                tryBlob();
+            };
+            img.onerror = () => resolve(file);
+            img.src = objectUrl;
+        });
+    }
+
     function toggleCategory(category: string) {
         if (selectedCategories.includes(category)) {
             selectedCategories = selectedCategories.filter(
@@ -193,7 +235,8 @@
             formData.append("end_time", endTime);
             formData.append("categories", JSON.stringify(selectedCategories));
             formData.append("h-captcha-response", captchaToken);
-            for (const photo of photoFiles) {
+            const compressed = await Promise.all(photoFiles.map((f) => compressImage(f)));
+            for (const photo of compressed) {
                 formData.append("photos", photo);
             }
 
