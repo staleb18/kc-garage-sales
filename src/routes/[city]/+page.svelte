@@ -10,6 +10,23 @@
     const canonicalUrl = `https://kcgaragesales.com/${citySlug}`;
     const pageTitle = `Garage Sales in ${cityName}, KS/MO | KC Garage Sales`;
     const pageDescription = `Find ${sales.length > 0 ? sales.length + " active " : ""}garage sales, yard sales, and estate sales in ${cityName}. Browse listings and discover deals near you.`;
+
+    const itemListJsonLd = $derived(
+        sales.length > 0
+            ? JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "ItemList",
+                  "name": `Garage Sales in ${cityName}`,
+                  "numberOfItems": sales.length,
+                  "itemListElement": sales.map((sale, i) => ({
+                      "@type": "ListItem",
+                      "position": i + 1,
+                      "name": sale.title,
+                      "url": `https://kcgaragesales.com/sale/${sale.id}`,
+                  })),
+              })
+            : null,
+    );
 </script>
 
 <svelte:head>
@@ -19,7 +36,10 @@
     <meta property="og:title" content="Garage Sales in {cityName} | KC Garage Sales" />
     <meta property="og:description" content={pageDescription} />
     <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:image" content="https://kcgaragesales.com/og-image.svg" />
+    <meta property="og:image" content="https://kcgaragesales.com/og-image.png" />
+    {#if itemListJsonLd}
+        {@html `<script type="application/ld+json">${itemListJsonLd}</script>`}
+    {/if}
 </svelte:head>
 
 <Header />

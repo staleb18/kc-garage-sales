@@ -31,11 +31,11 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta property="og:site_name" content="KC Garage Sales" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://kcgaragesales.com/og-image.svg" />
+    <meta property="og:image" content="https://kcgaragesales.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://kcgaragesales.com/og-image.svg" />
+    <meta name="twitter:image" content="https://kcgaragesales.com/og-image.png" />
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50">

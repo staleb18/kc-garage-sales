@@ -87,7 +87,7 @@
 
     const saleUrl = $derived(`https://kcgaragesales.com/sale/${sale.id}`);
     const saleDescription = $derived(sale.description || `Garage sale in ${sale.city}, ${sale.state} on ${sale.start_date}`);
-    const saleImage = $derived(sale.photos && sale.photos.length > 0 ? sale.photos[0] : 'https://kcgaragesales.com/og-image.svg');
+    const saleImage = $derived(sale.photos && sale.photos.length > 0 ? sale.photos[0] : 'https://kcgaragesales.com/og-image.png');
     const jsonLd = $derived(JSON.stringify({
         "@context": "https://schema.org",
         "@type": "Event",

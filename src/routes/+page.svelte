@@ -156,6 +156,21 @@
     function handleSaleClick(sale: GarageSale) {
         window.location.href = `/sale/${sale.id}`;
     }
+
+    const websiteJsonLd = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "KC Garage Sales",
+        "url": "https://kcgaragesales.com",
+        "description": "Find garage sales, yard sales, and estate sales in the Kansas City metro area. Post your sale for free!",
+        "publisher": {
+            "@type": "Organization",
+            "name": "KC Garage Sales",
+            "url": "https://kcgaragesales.com",
+            "logo": "https://kcgaragesales.com/og-image.png",
+            "areaServed": "Kansas City Metro Area"
+        }
+    });
 </script>
 
 <svelte:head>
@@ -165,6 +180,7 @@
     <meta property="og:title" content="KC Garage Sales - Find Garage Sales in Kansas City Metro" />
     <meta property="og:description" content="Find garage sales, yard sales, and estate sales in the Kansas City metro area. Post your sale for free!" />
     <meta property="og:url" content="https://kcgaragesales.com" />
+    {@html `<script type="application/ld+json">${websiteJsonLd}</script>`}
 </svelte:head>
 
 <Header />
