@@ -1,6 +1,7 @@
 import type { RequestHandler } from "./$types";
 import { supabaseAdmin } from "$lib/supabase/server";
 import { PUBLIC_APP_URL } from "$env/static/public";
+import { CITIES } from "$lib/data/cities";
 
 const STATIC_PAGES = [
   { path: "", changefreq: "daily" },
@@ -11,32 +12,7 @@ const STATIC_PAGES = [
   { path: "/post", changefreq: "monthly" },
 ];
 
-const CITY_SLUGS = [
-  "overland-park",
-  "olathe",
-  "kansas-city",
-  "shawnee",
-  "lenexa",
-  "leawood",
-  "prairie-village",
-  "gardner",
-  "merriam",
-  "mission",
-  "roeland-park",
-  "independence",
-  "lees-summit",
-  "blue-springs",
-  "liberty",
-  "gladstone",
-  "raytown",
-  "grandview",
-  "belton",
-  "raymore",
-  "grain-valley",
-  "north-kansas-city",
-  "parkville",
-  "platte-city",
-];
+const CITY_SLUGS = Object.keys(CITIES);
 
 export const GET: RequestHandler = async () => {
   const { data: sales } = await supabaseAdmin

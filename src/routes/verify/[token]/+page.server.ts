@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { supabaseAdmin } from '$lib/supabase/server';
 import { error, redirect } from '@sveltejs/kit';
+import { submitToIndexNow } from '$lib/indexnow';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const { token } = params;
@@ -31,6 +32,9 @@ export const load: PageServerLoad = async ({ params }) => {
 		console.error('Verification error:', updateError);
 		throw error(500, 'Failed to verify sale');
 	}
+
+	// Newly public — tell IndexNow-enabled search engines to crawl it now.
+	await submitToIndexNow(`https://kcgaragesales.com/sale/${sale.id}`);
 
 	// Redirect to sale page with success message
 	throw redirect(302, `/sale/${sale.id}?verified=success`);

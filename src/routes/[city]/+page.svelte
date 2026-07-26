@@ -2,14 +2,33 @@
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import SaleCard from "$lib/components/SaleCard.svelte";
+    import { CITIES } from "$lib/data/cities";
     import type { PageData } from "./$types";
 
     let { data }: { data: PageData } = $props();
-    const { cityName, citySlug, sales } = $derived(data);
+    const { cityName, citySlug, city, sales } = $derived(data);
 
-    const canonicalUrl = `https://kcgaragesales.com/${citySlug}`;
-    const pageTitle = `Garage Sales in ${cityName}, KS/MO | KC Garage Sales`;
-    const pageDescription = `Find ${sales.length > 0 ? sales.length + " active " : ""}garage sales, yard sales, and estate sales in ${cityName}. Browse listings and discover deals near you.`;
+    const canonicalUrl = $derived(`https://kcgaragesales.com/${citySlug}`);
+    const pageTitle = $derived(`Garage Sales in ${cityName}, ${city.state} | KC Garage Sales`);
+    const pageDescription = $derived(
+        `Find ${sales.length > 0 ? sales.length + " active " : ""}garage sales, yard sales, and estate sales in ${cityName}, ${city.state} (${city.county}). Browse listings or post your sale free.`,
+    );
+
+    // FAQ content is lightly tailored per city so each page carries unique text.
+    const faqs = $derived([
+        {
+            q: `Where can I find garage sales in ${cityName} this weekend?`,
+            a: `All current garage sales, yard sales, and estate sales in ${cityName}, ${city.state} are listed on this page. New sales are added by local sellers throughout the week, so check back on Thursday and Friday for the latest weekend listings.`,
+        },
+        {
+            q: `How do I post a garage sale in ${cityName}?`,
+            a: `Posting is free. Use the "Post a Sale" button on this page, add your address, dates, times, and photos, and confirm by email. Your ${cityName} sale then appears here and on the KC Garage Sales map for local buyers to find.`,
+        },
+        {
+            q: `When is garage sale season in ${cityName}?`,
+            a: `Garage sales in ${cityName} and the rest of ${city.county} are busiest from April through June and again in September and October, when the weather is mild. Many neighborhoods hold community-wide sales during these months.`,
+        },
+    ]);
 
     const itemListJsonLd = $derived(
         sales.length > 0
@@ -27,6 +46,18 @@
               })
             : null,
     );
+
+    const faqJsonLd = $derived(
+        JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": faqs.map((f) => ({
+                "@type": "Question",
+                "name": f.q,
+                "acceptedAnswer": { "@type": "Answer", "text": f.a },
+            })),
+        }),
+    );
 </script>
 
 <svelte:head>
@@ -40,6 +71,7 @@
     {#if itemListJsonLd}
         {@html `<script type="application/ld+json">${itemListJsonLd}</script>`}
     {/if}
+    {@html `<script type="application/ld+json">${faqJsonLd}</script>`}
 </svelte:head>
 
 <Header />
@@ -48,7 +80,7 @@
     <!-- Hero -->
     <section class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-10 px-4">
         <div class="max-w-5xl mx-auto">
-            <nav class="text-blue-200 text-sm mb-4">
+            <nav class="text-blue-200 text-sm mb-4" aria-label="Breadcrumb">
                 <a href="/" class="hover:text-white">KC Garage Sales</a>
                 <span class="mx-2">›</span>
                 <span class="text-white">{cityName}</span>
@@ -56,6 +88,7 @@
             <h1 class="text-3xl md:text-4xl font-bold mb-3">
                 Garage Sales in <span class="text-amber-400">{cityName}</span>
             </h1>
+            <p class="text-blue-100 text-sm mb-2">{city.county}, {city.state === "KS" ? "Kansas" : "Missouri"}</p>
             <p class="text-blue-100 text-lg mb-6">
                 {#if sales.length > 0}
                     {sales.length} active {sales.length === 1 ? "sale" : "sales"} listed right now
@@ -92,50 +125,70 @@
         {/if}
     </section>
 
-    <!-- Area info for SEO -->
+    <!-- Area info for SEO (unique per city) -->
     <section class="max-w-5xl mx-auto px-4 pb-10">
         <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
                 About Garage Sales in {cityName}
             </h2>
             <p class="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
-                Looking for garage sales, yard sales, or estate sales in {cityName}? KC Garage Sales is the
-                Kansas City metro's free platform for finding and posting local sales. Browse current listings
-                above or <a href="/" class="text-blue-600 hover:underline">search all KC metro sales</a> to
-                find deals across the region.
+                {city.intro}
             </p>
             <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Sellers in {cityName} can <a href="/post" class="text-blue-600 hover:underline">post a sale for free</a> —
-                reach thousands of local buyers with your listing, including photos, dates, times, and categories.
+                KC Garage Sales is the Kansas City metro's free platform for finding and posting local
+                sales. Browse current {cityName} listings above, or
+                <a href="/" class="text-blue-600 hover:underline">search all KC metro sales</a>. Sellers in
+                {cityName} can <a href="/post" class="text-blue-600 hover:underline">post a sale for free</a>
+                with photos, dates, times, and categories to reach thousands of local buyers.
             </p>
         </div>
     </section>
 
-    <!-- Other cities -->
-    <section class="max-w-5xl mx-auto px-4 pb-12">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Other KC Metro Cities</h2>
+    <!-- FAQ (unique per city, with FAQPage schema) -->
+    <section class="max-w-5xl mx-auto px-4 pb-10">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Garage Sale FAQ — {cityName}
+        </h2>
+        <div class="space-y-3">
+            {#each faqs as faq}
+                <details class="group bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 p-5">
+                    <summary class="cursor-pointer font-medium text-gray-900 dark:text-white list-none flex items-center justify-between">
+                        {faq.q}
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-sm transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <p class="text-gray-600 dark:text-gray-400 leading-relaxed mt-3">{faq.a}</p>
+                </details>
+            {/each}
+        </div>
+    </section>
+
+    <!-- Nearby cities (unique per city) -->
+    <section class="max-w-5xl mx-auto px-4 pb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Garage Sales in Nearby Cities</h2>
         <div class="flex flex-wrap gap-2">
-            {#each [
-                { slug: "overland-park", name: "Overland Park" },
-                { slug: "olathe", name: "Olathe" },
-                { slug: "kansas-city", name: "Kansas City" },
-                { slug: "lees-summit", name: "Lee's Summit" },
-                { slug: "independence", name: "Independence" },
-                { slug: "shawnee", name: "Shawnee" },
-                { slug: "blue-springs", name: "Blue Springs" },
-                { slug: "lenexa", name: "Lenexa" },
-                { slug: "leawood", name: "Leawood" },
-                { slug: "liberty", name: "Liberty" },
-                { slug: "gladstone", name: "Gladstone" },
-                { slug: "prairie-village", name: "Prairie Village" },
-                { slug: "raytown", name: "Raytown" },
-                { slug: "north-kansas-city", name: "North Kansas City" },
-            ].filter(c => c.slug !== citySlug) as city}
+            {#each city.nearby as slug}
+                {#if CITIES[slug]}
+                    <a
+                        href="/{slug}"
+                        class="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium transition-colors"
+                    >
+                        {CITIES[slug].name}
+                    </a>
+                {/if}
+            {/each}
+        </div>
+    </section>
+
+    <!-- Browse all cities -->
+    <section class="max-w-5xl mx-auto px-4 pb-12">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">All KC Metro Cities</h2>
+        <div class="flex flex-wrap gap-2">
+            {#each Object.values(CITIES).filter((c) => c.slug !== citySlug) as c}
                 <a
-                    href="/{city.slug}"
+                    href="/{c.slug}"
                     class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-full text-sm transition-colors"
                 >
-                    {city.name}
+                    {c.name}
                 </a>
             {/each}
         </div>
