@@ -24,9 +24,9 @@
 
             <!-- Desktop Navigation -->
             <nav class="hidden md:flex items-center gap-4">
-                <a href="/" class="text-gray-600 hover:text-blue-600 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/"}>Home</a>
-                <a href="/about" class="text-gray-600 hover:text-blue-600 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/about"}>About</a>
-                <a href="/contact" class="text-gray-600 hover:text-blue-600 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/contact"}>Contact</a>
+                <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/"}>Home</a>
+                <a href="/about" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/about"}>About</a>
+                <a href="/contact" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors" class:text-blue-600={$page.url.pathname === "/contact"}>Contact</a>
                 <a href="/post" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                     <i class="fa-solid fa-plus mr-2"></i>Post a Sale
                 </a>

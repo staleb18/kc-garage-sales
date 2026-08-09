@@ -18,3 +18,27 @@ body {
 	font-family: 'Inter', system-ui, -apple-system, sans-serif;
 	overflow-x: clip;
 }
+
+/*
+ * Form controls in dark mode.
+ * The Tailwind utility classes on inputs (border-gray-300, etc.) only cover light
+ * mode, so in dark mode text fields kept dark text on no background and were nearly
+ * invisible. Give every text field, textarea, and select a readable dark treatment
+ * site-wide. Error-state borders (.border-red-*) still win via class specificity.
+ */
+@media (prefers-color-scheme: dark) {
+	input:not([type='checkbox']):not([type='radio']):not([type='file']),
+	textarea,
+	select {
+		background-color: #1f2937; /* gray-800 */
+		border-color: #374151; /* gray-700 */
+		color: #f3f4f6; /* gray-100 */
+		color-scheme: dark;
+	}
+
+	input::placeholder,
+	textarea::placeholder {
+		color: #9ca3af; /* gray-400 — readable but clearly a placeholder */
+		opacity: 1;
+	}
+}
