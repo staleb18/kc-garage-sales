@@ -66,7 +66,7 @@ async function geocodeAddress(
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=1&countrycodes=us`,
       {
-        headers: { "User-Agent": "KCGarageSales/1.0" },
+        headers: { "User-Agent": "KCGarageSales/1.0 (+https://kcgaragesales.com)" },
         signal: controller.signal,
       },
     );
@@ -85,6 +85,46 @@ async function geocodeAddress(
   }
 
   return null;
+}
+
+// Approximate city-center coordinates for the KC metro. Used as a fallback so a
+// geocoding miss (Nominatim can't find a residential address, or rate-limits our
+// server IP) never blocks a legitimate post — the sale still shows, roughly placed.
+const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  "overland park": { lat: 38.9822, lng: -94.6708 },
+  olathe: { lat: 38.8814, lng: -94.8191 },
+  "kansas city": { lat: 39.0997, lng: -94.5786 },
+  shawnee: { lat: 39.0417, lng: -94.7203 },
+  lenexa: { lat: 38.9536, lng: -94.7336 },
+  leawood: { lat: 38.9667, lng: -94.6169 },
+  "prairie village": { lat: 38.9911, lng: -94.6336 },
+  gardner: { lat: 38.8111, lng: -94.9272 },
+  merriam: { lat: 39.0236, lng: -94.6933 },
+  mission: { lat: 39.0278, lng: -94.6558 },
+  "roeland park": { lat: 39.0361, lng: -94.6347 },
+  independence: { lat: 39.0911, lng: -94.4155 },
+  "lee's summit": { lat: 38.9108, lng: -94.3822 },
+  "lees summit": { lat: 38.9108, lng: -94.3822 },
+  "blue springs": { lat: 39.0169, lng: -94.2816 },
+  liberty: { lat: 39.2461, lng: -94.4191 },
+  gladstone: { lat: 39.2044, lng: -94.5547 },
+  raytown: { lat: 39.0086, lng: -94.4636 },
+  grandview: { lat: 38.8853, lng: -94.5330 },
+  belton: { lat: 38.8119, lng: -94.5316 },
+  raymore: { lat: 38.8022, lng: -94.4530 },
+  "grain valley": { lat: 39.0150, lng: -94.1980 },
+  "north kansas city": { lat: 39.1297, lng: -94.5622 },
+  parkville: { lat: 39.1950, lng: -94.6822 },
+  "platte city": { lat: 39.3700, lng: -94.7800 },
+};
+
+// Never let geocoding block a post: fall back to the city center, then a state
+// center, then the KC metro center.
+function getFallbackCoords(city: string, state: string): { lat: number; lng: number } {
+  const byCity = CITY_COORDS[city.trim().toLowerCase()];
+  if (byCity) return byCity;
+  if (state === "MO") return { lat: 39.0997, lng: -94.5786 }; // Kansas City, MO
+  return { lat: 38.9822, lng: -94.6708 }; // Overland Park, KS (Johnson County center)
 }
 
 // Send verification email using Resend
@@ -180,7 +220,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       throw error(400, "End time must be after start time.");
     }
     // Run geocoding and photo uploads in parallel
-    const [coords, photos] = await Promise.all([
+    const [geocoded, photos] = await Promise.all([
       geocodeAddress(address, city, state, zip_code),
       Promise.all(
         photoFiles
@@ -189,8 +229,10 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       ).then((results) => results.filter((url): url is string => url !== null)),
     ]);
 
-    if (!coords) {
-      throw error(400, "Could not find that address. Please double-check and try again.");
+    // A geocoding miss must never block a post — fall back to city-center coords.
+    const coords = geocoded ?? getFallbackCoords(city, state);
+    if (!geocoded) {
+      console.warn(`Geocoding fell back to city center for: ${address}, ${city}, ${state}`);
     }
 
     // Create the sale
