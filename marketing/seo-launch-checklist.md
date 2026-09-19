@@ -100,3 +100,34 @@ Reddit hates ads but loves local projects. Frame it as "I built this":
 - Months 3–6+: competitive terms improve as backlinks accumulate
 - The Facebook/Nextdoor posts bring real users **this week** — don't skip them
   waiting for Google
+
+---
+
+## Facebook-group seeding posts (tailored — rotate, don't post all in one group)
+
+**Post 1 — get SELLERS to list (garage-sale groups):**
+> 🏷️ Having a garage sale? Post it FREE and get more shoppers.
+> I built kcgaragesales.com — a free map of every garage sale in the KC metro. Adding your
+> sale takes about 2 minutes (no account needed): address, dates, times, photos. It shows up
+> on the map so buyers can find your street and plan a route.
+> Fall cleanout, estate sale, or moving sale? Post it — free, no ads, no fees.
+> 👉 kcgaragesales.com/post
+
+**Post 2 — get BUYERS using it (garage-sale groups, different day):**
+> 🔎 KC garage sale hunters — every metro sale on one map.
+> Instead of scrolling a dozen posts, kcgaragesales.com puts every garage, yard & estate sale
+> in the KC area on one map — plan your Saturday route, filter by city, get directions.
+> It's free and just getting going. Take a look and tell me what you think!
+> 👉 kcgaragesales.com
+
+**Post 3 — warm "I built this" (neighborhood + buy/sell/trade groups):**
+> Hey neighbors 👋 Weekend project I made for our area: kcgaragesales.com — a free map of
+> garage sales across the KC metro. Having a sale? Post it free in 2 minutes and shoppers can
+> find your street. Love a good Saturday sale? Everything's on one map instead of scattered
+> across Facebook and Craigslist. No ads, no fees. Got a sale coming up? Post it and help kick
+> it off!
+> 👉 kcgaragesales.com
+
+**Usage:** rotate across groups/days · post Thursday/Friday · if links are banned, put the URL
+in the first comment or as plain text · reply to every comment (boosts reach) · seed 1–2 real
+listings yourself first so visitors don't hit an empty map.
