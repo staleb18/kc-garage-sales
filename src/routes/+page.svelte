@@ -8,6 +8,7 @@
     import SaleCardSkeleton from "$lib/components/SaleCardSkeleton.svelte";
     import type { GarageSale } from "$lib/types";
     import { CATEGORIES, CATEGORY_EMOJI } from "$lib/types";
+    import { canonicalCity } from "$lib/utils/city";
 
     // Category scroll fade state
     let categoryScrollEl = $state<HTMLDivElement | null>(null);
@@ -86,7 +87,8 @@
     let cities = $derived.by(() => {
         const cityCount = new Map<string, number>();
         for (const sale of data.sales) {
-            const city = sale.city;
+            const city = canonicalCity(sale.city);
+            if (!city) continue;
             cityCount.set(city, (cityCount.get(city) || 0) + 1);
         }
         return Array.from(cityCount.entries())
@@ -96,8 +98,9 @@
 
     // Dynamic categories: only those with ≥1 sale in current city filter, sorted by count
     let activeCategories = $derived.by(() => {
+        const target = canonicalCity(selectedCity);
         const salesInCity = selectedCity
-            ? data.sales.filter((s) => s.city === selectedCity)
+            ? data.sales.filter((s) => canonicalCity(s.city) === target)
             : data.sales;
 
         const counts = new Map<string, number>();
@@ -124,7 +127,8 @@
         let result = data.sales;
 
         if (selectedCity) {
-            result = result.filter((s) => s.city === selectedCity);
+            const target = canonicalCity(selectedCity);
+            result = result.filter((s) => canonicalCity(s.city) === target);
         }
 
         if (selectedCategory) {

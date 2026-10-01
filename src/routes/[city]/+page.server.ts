@@ -14,7 +14,8 @@ export const load: PageServerLoad = async ({ params }) => {
     .from("garage_sales")
     .select("*")
     .eq("is_verified", true)
-    .eq("city", city.name)
+    // Case-insensitive so sales typed as "overland park" still show on /overland-park.
+    .ilike("city", city.name)
     .gte("end_date", new Date().toISOString().split("T")[0])
     .order("start_date", { ascending: true });
 

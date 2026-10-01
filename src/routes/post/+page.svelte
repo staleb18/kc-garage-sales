@@ -3,6 +3,13 @@
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import { CATEGORIES, CATEGORY_EMOJI } from "$lib/types";
+    import { CITIES } from "$lib/data/cities";
+
+    // Metro cities offered as autocomplete suggestions on the City field so people
+    // pick a consistently-spelled name instead of free-typing variants.
+    const cityNames = Object.values(CITIES)
+        .map((c) => c.name)
+        .sort((a, b) => a.localeCompare(b));
 
     let isSubmitting = $state(false);
     let error = $state("");
@@ -478,12 +485,16 @@
                             <input
                                 type="text"
                                 id="city"
+                                list="city-options"
                                 bind:value={city}
                                 onblur={() => onBlur("city")}
                                 required
                                 placeholder="Overland Park"
                                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {fieldErrors.city ? 'border-red-400' : 'border-gray-300'}"
                             />
+                            <datalist id="city-options">
+                                {#each cityNames as name}<option value={name}></option>{/each}
+                            </datalist>
                             {#if fieldErrors.city}<p class="text-xs text-red-500 mt-1">{fieldErrors.city}</p>{/if}
                         </div>
 

@@ -5,6 +5,7 @@ import { PUBLIC_APP_URL, PUBLIC_SUPABASE_URL } from "$env/static/public";
 import { RESEND_API_KEY, RESEND_FROM_EMAIL } from "$env/static/private";
 import { Resend } from "resend";
 import { checkRateLimit } from "$lib/rateLimit";
+import { canonicalCity } from "$lib/utils/city";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
@@ -183,7 +184,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
     const address = formData.get("address") as string;
-    const city = formData.get("city") as string;
+    // Normalize to a canonical name so casing/spacing never splits one city
+    // into several entries on the map, dropdown, and city landing pages.
+    const city = canonicalCity(formData.get("city") as string);
     const state = formData.get("state") as string;
     const zip_code = formData.get("zip_code") as string;
     const start_date = formData.get("start_date") as string;
