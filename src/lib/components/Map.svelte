@@ -99,13 +99,21 @@
             iconAnchor: [16, 16],
         });
 
-        // Create cluster group with custom cluster icon
+        // Create cluster group with custom cluster icon.
+        // showCoverageOnHover outlines the cluster's area; spiderfy fans out pins
+        // that can't separate by zoom; zoomToBoundsOnClick expands on click. These
+        // make it obvious a numbered badge is an openable group, not a lone marker.
         clusterGroup = (L as any).markerClusterGroup({
             maxClusterRadius: 50,
+            showCoverageOnHover: true,
+            spiderfyOnMaxZoom: true,
+            zoomToBoundsOnClick: true,
             iconCreateFunction: (cluster: any) => {
                 const count = cluster.getChildCount();
+                // Native title tooltip tells the user the badge is a clickable group.
+                const label = `${count} ${count === 1 ? "sale" : "sales"} — click to zoom in`;
                 return L.divIcon({
-                    html: `<div style="width:36px;height:36px;background:#2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${count}</div>`,
+                    html: `<div title="${label}" style="width:36px;height:36px;background:#2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer">${count}</div>`,
                     className: "",
                     iconSize: [36, 36],
                     iconAnchor: [18, 18],
@@ -117,12 +125,15 @@
         sales.forEach((sale) => {
             const marker = L.marker([sale.latitude, sale.longitude], { icon: saleIcon });
 
-            marker.bindPopup(`
+            // Hover shows a quick preview; click still opens the full sale page, so
+            // people can scan pins without navigating. Touch has no hover, but tapping
+            // still fires the click handler below.
+            marker.bindTooltip(`
 				<div style="min-width: 150px;">
 					<strong>${sale.title}</strong><br>
 					<span style="color: #666;">${sale.city}, ${sale.state}</span>
 				</div>
-			`);
+			`, { direction: "top", offset: [0, -14], opacity: 1, className: "sale-tooltip" });
 
             marker.on("click", () => {
                 if (onSaleClick) onSaleClick(sale);
@@ -152,6 +163,17 @@
 
 <div class="relative w-full h-full min-h-[400px]">
     <div bind:this={mapContainer} class="w-full h-full rounded-xl overflow-hidden"></div>
+    {#if sales.length > 0}
+        <!-- Running total so the user can reconcile clustered badges (e.g. 5 + 2 + 1)
+             with the real count and never thinks sales are missing. -->
+        <div
+            class="absolute top-3 right-3 z-[1000] bg-white/95 dark:bg-gray-800/95 text-gray-700 dark:text-gray-200 text-xs font-medium px-3 py-1.5 rounded-full shadow-md pointer-events-none"
+        >
+            <i class="fa-solid fa-tag text-blue-600 mr-1"></i>
+            {sales.length}
+            {sales.length === 1 ? "sale" : "sales"} in view
+        </div>
+    {/if}
     {#if sales.length === 0 && map}
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg px-6 py-4 text-center max-w-xs pointer-events-auto">
