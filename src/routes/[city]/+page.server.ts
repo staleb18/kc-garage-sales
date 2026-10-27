@@ -2,6 +2,7 @@ import type { PageServerLoad } from "./$types";
 import { supabase } from "$lib/supabase/client";
 import { error } from "@sveltejs/kit";
 import { getCity } from "$lib/data/cities";
+import { kcTodayStr } from "$lib/utils/dates";
 
 export const load: PageServerLoad = async ({ params }) => {
   const city = getCity(params.city);
@@ -16,7 +17,7 @@ export const load: PageServerLoad = async ({ params }) => {
     .eq("is_verified", true)
     // Case-insensitive so sales typed as "overland park" still show on /overland-park.
     .ilike("city", city.name)
-    .gte("end_date", new Date().toISOString().split("T")[0])
+    .gte("end_date", kcTodayStr())
     .order("start_date", { ascending: true });
 
   return {

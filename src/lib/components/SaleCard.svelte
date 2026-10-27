@@ -1,11 +1,23 @@
 <script lang="ts">
     import type { GarageSale } from "$lib/types";
+    import { isToday as saleIsToday, isThisWeekend as saleIsThisWeekend } from "$lib/utils/dates";
 
     interface Props {
         sale: GarageSale;
+        // Route-planning mode: show a selection checkbox instead of navigating.
+        selectable?: boolean;
+        selected?: boolean;
+        onToggleSelect?: (id: string) => void;
     }
 
-    let { sale }: Props = $props();
+    let { sale, selectable = false, selected = false, onToggleSelect }: Props = $props();
+
+    function handleToggle(e: MouseEvent) {
+        // The card is a link; keep the checkbox from navigating.
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleSelect?.(sale.id);
+    }
 
     function formatDate(dateStr: string): string {
         const date = new Date(dateStr + "T00:00:00");
@@ -38,33 +50,29 @@
         return now.getTime() - created.getTime() < 24 * 60 * 60 * 1000;
     }
 
-    function isToday(): boolean {
-        const today = new Date();
-        const todayStr = today.toISOString().slice(0, 10);
-        return sale.start_date <= todayStr && todayStr <= sale.end_date;
-    }
-
-    function isThisWeekend(): boolean {
-        if (isToday()) return false;
-        const today = new Date();
-        const day = today.getDay(); // 0=Sun, 6=Sat
-        const daysUntilSat = day === 6 ? 0 : (6 - day);
-        const sat = new Date(today);
-        sat.setDate(today.getDate() + daysUntilSat);
-        const sun = new Date(sat);
-        sun.setDate(sat.getDate() + 1);
-        const satStr = sat.toISOString().slice(0, 10);
-        const sunStr = sun.toISOString().slice(0, 10);
-        return sale.start_date <= sunStr && sale.end_date >= satStr;
-    }
+    // Local-timezone-correct date checks live in $lib/utils/dates so the badges
+    // here and the "Today"/"This Weekend" filters on the home page always agree.
+    const today = $derived(saleIsToday(sale));
+    const thisWeekend = $derived(saleIsThisWeekend(sale));
 </script>
 
 <a
     href="/sale/{sale.id}"
-    class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100 dark:border-gray-700"
+    class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border {selected ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-100 dark:border-gray-700'}"
 >
     <!-- Photo -->
     <div class="aspect-video bg-gray-100 relative">
+        {#if selectable}
+            <button
+                type="button"
+                onclick={handleToggle}
+                aria-pressed={selected}
+                aria-label={selected ? "Remove from route" : "Add to route"}
+                class="absolute top-2 left-2 z-20 w-8 h-8 rounded-lg border-2 flex items-center justify-center shadow-sm transition-colors {selected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/95 border-gray-300 text-transparent hover:border-blue-400'}"
+            >
+                <i class="fa-solid fa-check text-sm"></i>
+            </button>
+        {/if}
         {#if sale.photos && sale.photos.length > 0}
             <img
                 src={sale.photos[0]}
@@ -80,16 +88,16 @@
         {/if}
         {#if sale.is_featured}
             <div
-                class="absolute top-2 left-2 bg-amber-500 text-white text-xs font-semibold px-2 py-1 rounded"
+                class="absolute {selectable ? 'top-12' : 'top-2'} left-2 bg-amber-500 text-white text-xs font-semibold px-2 py-1 rounded"
             >
                 <i class="fa-solid fa-star mr-1"></i>Featured
             </div>
         {/if}
-        {#if isToday()}
+        {#if today}
             <div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded">
                 <i class="fa-solid fa-fire mr-1"></i>Today
             </div>
-        {:else if isThisWeekend()}
+        {:else if thisWeekend}
             <div class="absolute top-2 right-2 bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded">
                 <i class="fa-solid fa-calendar-week mr-1"></i>This Weekend
             </div>

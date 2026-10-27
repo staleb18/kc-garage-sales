@@ -9,6 +9,8 @@
     import type { GarageSale } from "$lib/types";
     import { CATEGORIES, CATEGORY_EMOJI } from "$lib/types";
     import { canonicalCity } from "$lib/utils/city";
+    import { matchesDateFilter, type DateFilter } from "$lib/utils/dates";
+    import { buildRouteUrl, MAX_ROUTE_STOPS, type GeoPoint } from "$lib/utils/route";
 
     // Category scroll fade state
     let categoryScrollEl = $state<HTMLDivElement | null>(null);
@@ -55,6 +57,103 @@
     let currentPage = $state<number>(parseInt(params.get("p") || "1"));
     const PAGE_SIZE = 12;
 
+    const WHEN_VALUES: DateFilter[] = ["all", "today", "weekend"];
+    const initialWhen = params.get("when") as DateFilter | null;
+    let dateFilter = $state<DateFilter>(
+        initialWhen && WHEN_VALUES.includes(initialWhen) ? initialWhen : "all",
+    );
+
+    // Route-planning mode: pick several sales, then open an optimized Maps route.
+    const ROUTE_STORAGE_KEY = "kcgs:route";
+    let routeMode = $state(false);
+    let selectedIds = $state<string[]>([]);
+    let startFromMyLocation = $state(true);
+    let locating = $state(false);
+
+    // Restore a previously-built selection so it survives navigating to a
+    // sale's detail page and back.
+    if (browser) {
+        try {
+            const saved = localStorage.getItem(ROUTE_STORAGE_KEY);
+            if (saved) selectedIds = JSON.parse(saved);
+        } catch {
+            // ignore malformed storage
+        }
+    }
+
+    $effect(() => {
+        if (!browser) return;
+        try {
+            localStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(selectedIds));
+        } catch {
+            // ignore quota/private-mode errors
+        }
+    });
+
+    function toggleSelect(id: string) {
+        selectedIds = selectedIds.includes(id)
+            ? selectedIds.filter((x) => x !== id)
+            : [...selectedIds, id];
+    }
+    function clearSelection() {
+        selectedIds = [];
+    }
+
+    // Only count/route sales still present in the loaded (active) data.
+    let selectedSales = $derived(
+        data.sales.filter((s) => selectedIds.includes(s.id)),
+    );
+
+    function planRoute() {
+        if (selectedSales.length === 0) return;
+        const stops: GeoPoint[] = selectedSales.map((s) => ({
+            latitude: s.latitude,
+            longitude: s.longitude,
+        }));
+
+        // Open the Maps tab NOW, synchronously inside the click, so the browser
+        // doesn't treat it as an unrequested pop-up. We fill in its URL once we
+        // (optionally) have the visitor's location. Opening without "noopener"
+        // keeps a handle so we can set its location; we null the opener after.
+        const win = window.open("about:blank", "_blank");
+
+        const finish = (origin?: GeoPoint) => {
+            const url = buildRouteUrl(stops, origin);
+            if (!url) {
+                win?.close();
+                return;
+            }
+            if (win) {
+                try { win.opener = null; } catch { /* noop */ }
+                win.location.href = url;
+            } else {
+                // Pop-up was blocked anyway — fall back to the current tab.
+                window.location.href = url;
+            }
+        };
+
+        if (startFromMyLocation && browser && navigator.geolocation) {
+            locating = true;
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    locating = false;
+                    finish({
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                    });
+                },
+                () => {
+                    // Denied or timed out — start from the first (nearest) stop.
+                    locating = false;
+                    finish(undefined);
+                },
+                { timeout: 8000, enableHighAccuracy: true },
+            );
+        } else {
+            finish(undefined);
+        }
+    }
+
     // Sync filter state to URL (debounced for search)
     let syncTimeout: ReturnType<typeof setTimeout>;
     function syncToUrl() {
@@ -66,6 +165,7 @@
             if (selectedCategory) url.searchParams.set("category", selectedCategory); else url.searchParams.delete("category");
             if (searchQuery) url.searchParams.set("q", searchQuery); else url.searchParams.delete("q");
             if (viewMode !== "map") url.searchParams.set("view", viewMode); else url.searchParams.delete("view");
+            if (dateFilter !== "all") url.searchParams.set("when", dateFilter); else url.searchParams.delete("when");
             if (currentPage > 1) url.searchParams.set("p", String(currentPage)); else url.searchParams.delete("p");
             goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
         }, 150);
@@ -73,13 +173,13 @@
 
     $effect(() => {
         // Track all filter changes and sync
-        selectedCity; selectedCategory; searchQuery; viewMode; currentPage;
+        selectedCity; selectedCategory; searchQuery; viewMode; dateFilter; currentPage;
         syncToUrl();
     });
 
     // Reset to page 1 when filters change
     $effect(() => {
-        selectedCity; selectedCategory; searchQuery;
+        selectedCity; selectedCategory; searchQuery; dateFilter;
         currentPage = 1;
     });
 
@@ -125,6 +225,10 @@
 
     let filteredSales = $derived.by(() => {
         let result = data.sales;
+
+        if (dateFilter !== "all") {
+            result = result.filter((s) => matchesDateFilter(s, dateFilter));
+        }
 
         if (selectedCity) {
             const target = canonicalCity(selectedCity);
@@ -189,7 +293,7 @@
 
 <Header />
 
-<main class="pb-20 md:pb-0">
+<main class="pb-20 md:pb-0 {routeMode && selectedSales.length > 0 ? 'pb-40 md:pb-24' : ''}">
     <!-- Hero Section (compact) -->
     <section class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-6 px-4">
         <div class="max-w-7xl mx-auto text-center">
@@ -228,34 +332,64 @@
     <!-- Filters & View Toggle -->
     <section class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-[1000]">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-2">
-            <!-- Row 1: City filter + View toggle -->
-            <div class="flex items-center justify-between gap-3">
-                <select
-                    bind:value={selectedCity}
-                    class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="">All Cities</option>
-                    {#each cities as { city, count }}
-                        <option value={city}>{city} ({count})</option>
-                    {/each}
-                </select>
+            <!-- Row 1: City + date filter + Plan Route + View toggle -->
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <select
+                        bind:value={selectedCity}
+                        class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="">All Cities</option>
+                        {#each cities as { city, count }}
+                            <option value={city}>{city} ({count})</option>
+                        {/each}
+                    </select>
+
+                    <!-- When: quick date filters -->
+                    <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                        <button
+                            onclick={() => (dateFilter = "all")}
+                            class="px-3 py-1.5 rounded text-sm font-medium transition-colors {dateFilter === 'all' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}"
+                        >All</button>
+                        <button
+                            onclick={() => (dateFilter = "today")}
+                            class="px-3 py-1.5 rounded text-sm font-medium transition-colors {dateFilter === 'today' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}"
+                        ><i class="fa-solid fa-fire mr-1 text-red-500"></i>Today</button>
+                        <button
+                            onclick={() => (dateFilter = "weekend")}
+                            class="px-3 py-1.5 rounded text-sm font-medium transition-colors {dateFilter === 'weekend' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}"
+                        ><i class="fa-solid fa-calendar-week mr-1 text-orange-500"></i>Weekend</button>
+                    </div>
+                </div>
 
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
                         {filteredSales.length} sale{filteredSales.length !== 1 ? "s" : ""}
                     </span>
-                    <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                        onclick={() => (routeMode = !routeMode)}
+                        aria-pressed={routeMode}
+                        class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {routeMode ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}"
+                    ><i class="fa-solid fa-route mr-1.5"></i>Plan Route</button>
+                    <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                         <button
                             onclick={() => (viewMode = "map")}
-                            class="px-4 py-2 rounded text-sm font-medium transition-colors {viewMode === 'map' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}"
+                            class="px-4 py-2 rounded text-sm font-medium transition-colors {viewMode === 'map' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}"
                         ><i class="fa-solid fa-map mr-1.5"></i>Map</button>
                         <button
                             onclick={() => (viewMode = "list")}
-                            class="px-4 py-2 rounded text-sm font-medium transition-colors {viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}"
+                            class="px-4 py-2 rounded text-sm font-medium transition-colors {viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}"
                         ><i class="fa-solid fa-list mr-1.5"></i>List</button>
                     </div>
                 </div>
             </div>
+
+            {#if routeMode}
+                <div class="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2">
+                    <i class="fa-solid fa-circle-info shrink-0"></i>
+                    <span>Tap the <i class="fa-solid fa-check mx-0.5"></i> on each sale you want to visit, then <strong>Plan Route</strong> to open an optimized Google Maps trip.</span>
+                </div>
+            {/if}
 
             <!-- Row 2: Categories — wraps on desktop, scrolls on mobile -->
             {#if activeCategories.length > 0}
@@ -330,7 +464,12 @@
                         </div>
                     {:else}
                         {#each paginatedSales as sale (sale.id)}
-                            <SaleCard {sale} />
+                            <SaleCard
+                                {sale}
+                                selectable={routeMode}
+                                selected={selectedIds.includes(sale.id)}
+                                onToggleSelect={toggleSelect}
+                            />
                         {/each}
 
                         {#if totalPages > 1}
@@ -371,7 +510,12 @@
                     </div>
                 {:else}
                     {#each paginatedSales as sale (sale.id)}
-                        <SaleCard {sale} />
+                        <SaleCard
+                            {sale}
+                            selectable={routeMode}
+                            selected={selectedIds.includes(sale.id)}
+                            onToggleSelect={toggleSelect}
+                        />
                     {/each}
                 {/if}
             </div>
@@ -422,12 +566,58 @@
     </section>
 </main>
 
-<!-- Sticky mobile CTA -->
-<div class="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 bg-white border-t border-gray-200 shadow-lg">
+<!-- Sticky mobile CTA (hidden while the route bar is up to avoid overlap) -->
+<div class="{routeMode && selectedSales.length > 0 ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 z-50 p-3 bg-white border-t border-gray-200 shadow-lg">
     <a href="/post" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
         <i class="fa-solid fa-plus mr-2"></i>Post a Garage Sale — Free
     </a>
 </div>
+
+<!-- Route-planning action bar -->
+{#if routeMode && selectedSales.length > 0}
+    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-x-4 gap-y-2 flex-wrap">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">{selectedSales.length}</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    sale{selectedSales.length !== 1 ? "s" : ""} on your route
+                </span>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+                <input
+                    type="checkbox"
+                    bind:checked={startFromMyLocation}
+                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Start from my location
+            </label>
+            <div class="ml-auto flex items-center gap-2">
+                <button
+                    onclick={clearSelection}
+                    class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >Clear</button>
+                <button
+                    onclick={planRoute}
+                    disabled={locating}
+                    class="px-5 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white transition-colors"
+                >
+                    {#if locating}
+                        <i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Locating…
+                    {:else}
+                        <i class="fa-solid fa-route mr-1.5"></i>Plan Route
+                    {/if}
+                </button>
+            </div>
+        </div>
+        {#if selectedSales.length > MAX_ROUTE_STOPS}
+            <div class="max-w-7xl mx-auto px-4 pb-2 -mt-1">
+                <p class="text-xs text-amber-600 dark:text-amber-400">
+                    <i class="fa-solid fa-circle-info mr-1"></i>Google Maps allows up to {MAX_ROUTE_STOPS} stops — the {MAX_ROUTE_STOPS} nearest to your start will be used.
+                </p>
+            </div>
+        {/if}
+    </div>
+{/if}
 
 <Footer />
 
