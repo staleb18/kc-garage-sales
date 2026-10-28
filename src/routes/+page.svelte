@@ -70,6 +70,38 @@
     let startFromMyLocation = $state(true);
     let locating = $state(false);
 
+    // Pre-warmed location so the "Plan Route" click doesn't wait on the browser's
+    // geolocation lookup. We fetch it quietly as soon as the user enters route
+    // mode; by the time they've picked sales and clicked, it's usually ready.
+    let cachedOrigin = $state<GeoPoint | null>(null);
+    let locationDenied = $state(false);
+    let warming = false;
+
+    function warmLocation() {
+        if (!browser || !navigator.geolocation) return;
+        if (cachedOrigin || locationDenied || warming) return;
+        warming = true;
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                warming = false;
+                cachedOrigin = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                };
+            },
+            () => {
+                // Denied/unavailable — remember so we don't re-prompt or block.
+                warming = false;
+                locationDenied = true;
+            },
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+        );
+    }
+
+    $effect(() => {
+        if (routeMode && startFromMyLocation) warmLocation();
+    });
+
     // Restore a previously-built selection so it survives navigating to a
     // sale's detail page and back.
     if (browser) {
@@ -116,6 +148,18 @@
         // (optionally) have the visitor's location. Opening without "noopener"
         // keeps a handle so we can set its location; we null the opener after.
         const win = window.open("about:blank", "_blank");
+        if (win) {
+            // Show a friendly placeholder so the new tab isn't a blank page
+            // while we (briefly) look up the visitor's location.
+            win.document.write(
+                '<!doctype html><title>Opening your route…</title>' +
+                '<body style="margin:0;font-family:system-ui,-apple-system,sans-serif;' +
+                'display:flex;align-items:center;justify-content:center;height:100vh;' +
+                'background:#1e40af;color:#fff;text-align:center">' +
+                '<div><div style="font-size:1.15rem;font-weight:600">Opening your route in Google Maps…</div>' +
+                '<div style="opacity:.85;margin-top:.4rem;font-size:.9rem">Finding your location</div></div></body>',
+            );
+        }
 
         const finish = (origin?: GeoPoint) => {
             const url = buildRouteUrl(stops, origin);
@@ -132,22 +176,32 @@
             }
         };
 
-        if (startFromMyLocation && browser && navigator.geolocation) {
+        if (!startFromMyLocation || locationDenied) {
+            // Not using location (or it was declined) — open immediately.
+            finish(undefined);
+        } else if (cachedOrigin) {
+            // Pre-warmed location is ready — instant.
+            finish(cachedOrigin);
+        } else if (browser && navigator.geolocation) {
+            // Location not warmed yet (clicked fast) — look it up now.
             locating = true;
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     locating = false;
-                    finish({
+                    const origin = {
                         latitude: pos.coords.latitude,
                         longitude: pos.coords.longitude,
-                    });
+                    };
+                    cachedOrigin = origin;
+                    finish(origin);
                 },
                 () => {
                     // Denied or timed out — start from the first (nearest) stop.
                     locating = false;
+                    locationDenied = true;
                     finish(undefined);
                 },
-                { timeout: 8000, enableHighAccuracy: true },
+                { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 },
             );
         } else {
             finish(undefined);
