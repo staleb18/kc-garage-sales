@@ -108,7 +108,7 @@
     <!-- Sales grid -->
     <section class="max-w-5xl mx-auto px-4 py-8">
         {#if sales.length > 0}
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {#each sales as sale (sale.id)}
                     <SaleCard {sale} />
                 {/each}

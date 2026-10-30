@@ -250,15 +250,35 @@
             .map(([city, count]) => ({ city, count }));
     });
 
-    // Dynamic categories: only those with ≥1 sale in current city filter, sorted by count
-    let activeCategories = $derived.by(() => {
-        const target = canonicalCity(selectedCity);
-        const salesInCity = selectedCity
-            ? data.sales.filter((s) => canonicalCity(s.city) === target)
-            : data.sales;
+    // Everything EXCEPT the category filter — the set the category chips count
+    // against, so a chip's number always matches what tapping it would show.
+    let salesBeforeCategory = $derived.by(() => {
+        let result = data.sales;
 
+        if (dateFilter !== "all") {
+            result = result.filter((s) => matchesDateFilter(s, dateFilter));
+        }
+        if (selectedCity) {
+            const target = canonicalCity(selectedCity);
+            result = result.filter((s) => canonicalCity(s.city) === target);
+        }
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(
+                (s) =>
+                    s.title.toLowerCase().includes(query) ||
+                    s.city.toLowerCase().includes(query) ||
+                    s.description?.toLowerCase().includes(query),
+            );
+        }
+        return result;
+    });
+
+    // Category chips: only those with ≥1 sale under the ACTIVE filters, with
+    // honest counts (so a "(1)" chip never leads to an empty result), sorted by count.
+    let activeCategories = $derived.by(() => {
         const counts = new Map<string, number>();
-        for (const sale of salesInCity) {
+        for (const sale of salesBeforeCategory) {
             for (const cat of (sale.categories || [])) {
                 counts.set(cat, (counts.get(cat) || 0) + 1);
             }
@@ -270,43 +290,29 @@
             .map((cat) => ({ name: cat, count: counts.get(cat) || 0 }));
     });
 
-    // Reset selected category if it has no sales in current filter
+    // Reset selected category if it has no sales under the current filters.
     $effect(() => {
         if (selectedCategory && !activeCategories.find(c => c.name === selectedCategory)) {
             selectedCategory = "";
         }
     });
 
-    let filteredSales = $derived.by(() => {
-        let result = data.sales;
+    let filteredSales = $derived(
+        selectedCategory
+            ? salesBeforeCategory.filter((s) => s.categories?.includes(selectedCategory))
+            : salesBeforeCategory,
+    );
 
-        if (dateFilter !== "all") {
-            result = result.filter((s) => matchesDateFilter(s, dateFilter));
-        }
-
-        if (selectedCity) {
-            const target = canonicalCity(selectedCity);
-            result = result.filter((s) => canonicalCity(s.city) === target);
-        }
-
-        if (selectedCategory) {
-            result = result.filter((s) =>
-                s.categories?.includes(selectedCategory),
-            );
-        }
-
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(
-                (s) =>
-                    s.title.toLowerCase().includes(query) ||
-                    s.city.toLowerCase().includes(query) ||
-                    s.description?.toLowerCase().includes(query),
-            );
-        }
-
-        return result;
-    });
+    // Distinguishes "nothing matches your filters" from "nothing posted yet".
+    let hasActiveFilters = $derived(
+        !!(selectedCity || selectedCategory || searchQuery || dateFilter !== "all"),
+    );
+    function clearFilters() {
+        selectedCity = "";
+        selectedCategory = "";
+        searchQuery = "";
+        dateFilter = "all";
+    }
 
     // Pagination
     let totalPages = $derived(Math.max(1, Math.ceil(filteredSales.length / PAGE_SIZE)));
@@ -452,7 +458,7 @@
                     <button
                         onclick={() => (selectedCategory = "")}
                         class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-                    >All <span class="opacity-70">({data.sales.length})</span></button>
+                    >All <span class="opacity-70">({salesBeforeCategory.length})</span></button>
                     {#each activeCategories as { name, count }}
                         <button
                             onclick={() => (selectedCategory = name)}
@@ -474,7 +480,7 @@
                         <button
                             onclick={() => (selectedCategory = "")}
                             class="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-                        >All ({data.sales.length})</button>
+                        >All ({salesBeforeCategory.length})</button>
                         {#each activeCategories as { name, count }}
                             <button
                                 onclick={() => (selectedCategory = name)}
@@ -489,6 +495,40 @@
             {/if}
         </div>
     </section>
+
+    <!-- Empty state: distinguishes "no match for your filters" from "nothing posted yet" -->
+    {#snippet emptyState()}
+        {#if hasActiveFilters && data.sales.length > 0}
+            <div class="w-16 h-16 bg-blue-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-calendar-xmark text-blue-400 text-2xl"></i>
+            </div>
+            <p class="text-lg font-semibold text-gray-800 dark:text-gray-100">No sales match your filters</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
+                There {data.sales.length === 1 ? "is" : "are"} {data.sales.length} active sale{data.sales.length !== 1 ? "s" : ""} — just not for what you've selected.
+            </p>
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+                {#if dateFilter !== "all"}
+                    <button
+                        onclick={() => (dateFilter = "all")}
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                    >Show all dates</button>
+                {/if}
+                <button
+                    onclick={clearFilters}
+                    class="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                >Clear all filters</button>
+            </div>
+        {:else}
+            <div class="w-16 h-16 bg-blue-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-store text-blue-400 text-2xl"></i>
+            </div>
+            <p class="text-lg font-semibold text-gray-800 dark:text-gray-100">No sales posted yet</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Be the first to post a garage sale in KC!</p>
+            <a href="/post" class="hidden md:inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
+                <i class="fa-solid fa-plus mr-2"></i>Post a Sale — Free
+            </a>
+        {/if}
+    {/snippet}
 
     <!-- Results -->
     <section class="max-w-7xl mx-auto px-4 py-6">
@@ -507,19 +547,13 @@
                 <div class="space-y-4">
                     {#if filteredSales.length === 0}
                         <div class="text-center py-10 px-4">
-                            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fa-solid fa-magnifying-glass text-blue-400 text-2xl"></i>
-                            </div>
-                            <p class="text-lg font-semibold text-gray-800">No sales found</p>
-                            <p class="text-sm text-gray-500 mt-1 mb-4">Be the first to post a garage sale in KC!</p>
-                            <a href="/post" class="hidden md:inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
-                                <i class="fa-solid fa-plus mr-2"></i>Post a Sale — Free
-                            </a>
+                            {@render emptyState()}
                         </div>
                     {:else}
                         {#each paginatedSales as sale (sale.id)}
                             <SaleCard
                                 {sale}
+                                variant="row"
                                 selectable={routeMode}
                                 selected={selectedIds.includes(sale.id)}
                                 onToggleSelect={toggleSelect}
@@ -546,21 +580,14 @@
             </div>
         {:else}
             <!-- List View -->
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {#if mapLoading}
                     {#each Array(8) as _}
                         <SaleCardSkeleton />
                     {/each}
                 {:else if filteredSales.length === 0}
                     <div class="col-span-full text-center py-10 px-4">
-                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fa-solid fa-magnifying-glass text-blue-400 text-2xl"></i>
-                        </div>
-                        <p class="text-lg font-semibold text-gray-800">No sales found</p>
-                        <p class="text-sm text-gray-500 mt-1 mb-4">Be the first to post a garage sale in KC!</p>
-                        <a href="/post" class="hidden md:inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm">
-                            <i class="fa-solid fa-plus mr-2"></i>Post a Sale — Free
-                        </a>
+                        {@render emptyState()}
                     </div>
                 {:else}
                     {#each paginatedSales as sale (sale.id)}
