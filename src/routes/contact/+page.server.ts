@@ -22,6 +22,13 @@ export const actions: Actions = {
     const email = (formData.get("email") as string)?.trim();
     const message = (formData.get("message") as string)?.trim();
 
+    // Honeypot: a hidden field real users never see. Bots fill it in.
+    // If it has any value, silently pretend success so the bot learns nothing.
+    const honeypot = (formData.get("website") as string)?.trim();
+    if (honeypot) {
+      return { success: true };
+    }
+
     if (!name || !email || !message) {
       return fail(400, { error: "All fields are required." });
     }

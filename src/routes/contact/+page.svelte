@@ -53,6 +53,18 @@
                             }}
                             class="space-y-4"
                         >
+                            <!-- Honeypot: hidden from real users; only bots fill it. Do not remove. -->
+                            <div class="absolute left-[-9999px] top-[-9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+                                <label for="website">Website (leave this blank)</label>
+                                <input
+                                    id="website"
+                                    name="website"
+                                    type="text"
+                                    tabindex="-1"
+                                    autocomplete="off"
+                                />
+                            </div>
+
                             <div>
                                 <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
                                 <input
