@@ -50,6 +50,7 @@
 					<a href="/contact" class="hover:text-white transition-colors">Contact</a>
 					<a href="/privacy" class="hover:text-white transition-colors">Privacy</a>
 					<a href="/terms" class="hover:text-white transition-colors">Terms</a>
+					<a href="https://tooljoy.app" target="_blank" rel="noopener" class="hover:text-white transition-colors">Free Tools ↗</a>
 				</div>
 
 				<div class="text-sm">
